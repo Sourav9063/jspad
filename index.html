@@ -1,0 +1,105 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>JS Pad — Online JavaScript Playground & Scratchpad</title>
+    <meta name="description" content="JS Pad is a free, instant online JavaScript playground and scratchpad. Write, run, and debug JS code in your browser — no setup, no install required." />
+    <meta name="keywords" content="js pad, jspad, javascript playground, online javascript editor, js scratchpad, javascript scratchpad, run javascript online, browser javascript editor, js repl, javascript repl, code sandbox, online code editor" />
+    <meta name="author" content="Sourav" />
+    <link rel="canonical" href="https://sourav9063.github.io/jspad" />
+
+    <!-- Open Graph / Social -->
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content="https://sourav9063.github.io/jspad" />
+    <meta property="og:title" content="JS Pad — Online JavaScript Playground & Scratchpad" />
+    <meta property="og:description" content="Free, instant online JavaScript playground. Write and run JS code in your browser — no setup, no install required." />
+    <meta property="og:site_name" content="JS Pad" />
+
+    <!-- Twitter -->
+    <meta name="twitter:card" content="summary" />
+    <meta name="twitter:title" content="JS Pad — Online JavaScript Playground & Scratchpad" />
+    <meta name="twitter:description" content="Free, instant online JavaScript playground. Write and run JS code in your browser — no setup required." />
+
+    <!-- Structured Data -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "WebApplication",
+      "name": "JS Pad",
+      "url": "https://sourav9063.github.io/jspad",
+      "description": "Free online JavaScript playground and scratchpad. Write, run, and debug JavaScript code instantly in your browser.",
+      "applicationCategory": "DeveloperApplication",
+      "operatingSystem": "Any",
+      "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD" }
+    }
+    </script>
+    <style>
+      body {
+        margin: 0;
+        display: flex;
+        height: 100vh;
+      }
+      #container {
+        width: 60%;
+        height: 100%;
+        border-right: 1px solid #333;
+      }
+      #output {
+        width: 40%;
+        background: #1e1e1e;
+        color: #75beff;
+        padding: 20px;
+        font-family: monospace;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="container"></div>
+    <div id="output">Output will appear here...</div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.44.0/min/vs/loader.min.js"></script>
+    <script>
+      require.config({
+        paths: {
+          vs: "https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.44.0/min/vs",
+        },
+      });
+
+      require(["vs/editor/editor.main"], function () {
+        // Initialize the editor
+        const editor = monaco.editor.create(
+          document.getElementById("container"),
+          {
+            value:
+              "console.log('Hello World!');\n\nfunction add(a, b) {\n  return a + b;\n}",
+            language: "javascript",
+            theme: "vs-dark",
+            automaticLayout: true,
+            fontSize: 16,
+          },
+        );
+
+        const outputDiv = document.getElementById("output");
+
+        // Run code on every change
+        editor.onDidChangeModelContent(() => {
+          try {
+            const code = editor.getValue();
+            let logs = [];
+            const customConsole = {
+              log: (...args) => logs.push(args.join(" ")),
+            };
+
+            new Function("console", code)(customConsole);
+            outputDiv.textContent = logs.join("\n");
+            outputDiv.style.color = "#75beff";
+          } catch (err) {
+            outputDiv.style.color = "#ff5555";
+            outputDiv.textContent = err.message;
+          }
+        });
+      });
+    </script>
+  </body>
+</html>
