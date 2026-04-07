@@ -4,49 +4,75 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>JS Pad — Online JavaScript Playground & Scratchpad</title>
-    <meta name="description" content="JS Pad is a free, instant online JavaScript playground and scratchpad. Write, run, and debug JS code in your browser — no setup, no install required." />
-    <meta name="keywords" content="js pad, jspad, javascript playground, online javascript editor, js scratchpad, javascript scratchpad, run javascript online, browser javascript editor, js repl, javascript repl, code sandbox, online code editor" />
+    <meta
+      name="description"
+      content="JS Pad is a free, instant online JavaScript playground and scratchpad. Write, run, and debug JS code in your browser — no setup, no install required."
+    />
+    <meta
+      name="keywords"
+      content="js pad, jspad, javascript playground, online javascript editor, js scratchpad, javascript scratchpad, run javascript online, browser javascript editor, js repl, javascript repl, code sandbox, online code editor"
+    />
     <meta name="author" content="Sourav" />
     <link rel="canonical" href="https://sourav9063.github.io/jspad" />
 
     <!-- Open Graph / Social -->
     <meta property="og:type" content="website" />
     <meta property="og:url" content="https://sourav9063.github.io/jspad" />
-    <meta property="og:title" content="JS Pad — Online JavaScript Playground & Scratchpad" />
-    <meta property="og:description" content="Free, instant online JavaScript playground. Write and run JS code in your browser — no setup, no install required." />
+    <meta
+      property="og:title"
+      content="JS Pad — Online JavaScript Playground & Scratchpad"
+    />
+    <meta
+      property="og:description"
+      content="Free, instant online JavaScript playground. Write and run JS code in your browser — no setup, no install required."
+    />
     <meta property="og:site_name" content="JS Pad" />
 
     <!-- Twitter -->
     <meta name="twitter:card" content="summary" />
-    <meta name="twitter:title" content="JS Pad — Online JavaScript Playground & Scratchpad" />
-    <meta name="twitter:description" content="Free, instant online JavaScript playground. Write and run JS code in your browser — no setup required." />
+    <meta
+      name="twitter:title"
+      content="JS Pad — Online JavaScript Playground & Scratchpad"
+    />
+    <meta
+      name="twitter:description"
+      content="Free, instant online JavaScript playground. Write and run JS code in your browser — no setup required."
+    />
 
     <script src="https://cdn.tailwindcss.com"></script>
 
     <!-- Structured Data -->
     <script type="application/ld+json">
-    {
-      "@context": "https://schema.org",
-      "@type": "WebApplication",
-      "name": "JS Pad",
-      "url": "https://sourav9063.github.io/jspad",
-      "description": "Free online JavaScript playground and scratchpad. Write, run, and debug JavaScript code instantly in your browser.",
-      "applicationCategory": "DeveloperApplication",
-      "operatingSystem": "Any",
-      "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD" }
-    }
+      {
+        "@context": "https://schema.org",
+        "@type": "WebApplication",
+        "name": "JS Pad",
+        "url": "https://sourav9063.github.io/jspad",
+        "description": "Free online JavaScript playground and scratchpad. Write, run, and debug JavaScript code instantly in your browser.",
+        "applicationCategory": "DeveloperApplication",
+        "operatingSystem": "Any",
+        "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD" }
+      }
     </script>
   </head>
   <body class="flex h-screen bg-zinc-900 overflow-hidden">
     <div id="container" class="w-3/5 h-full border-r border-zinc-700"></div>
     <div class="w-2/5 flex flex-col overflow-hidden">
-      <div class="flex items-center gap-2 px-3 py-1.5 bg-zinc-800 border-b border-zinc-700">
-        <button id="format-btn" class="px-2.5 py-0.5 text-xs font-mono bg-sky-700 hover:bg-sky-600 text-white rounded cursor-pointer">
+      <div
+        class="flex items-center gap-2 px-3 py-1.5 bg-zinc-800 border-b border-zinc-700"
+      >
+        <button
+          id="format-btn"
+          class="px-2.5 py-0.5 text-xs font-mono bg-sky-700 hover:bg-sky-600 text-white rounded cursor-pointer"
+        >
           Format
         </button>
         <span class="text-xs text-zinc-500 font-mono">Shift+Alt+F</span>
       </div>
-      <div id="output" class="flex-1 text-sky-300 font-mono text-sm p-5 overflow-auto whitespace-pre-wrap">
+      <div
+        id="output"
+        class="flex-1 font-mono text-sm p-5 overflow-auto whitespace-pre-wrap text-sky-300"
+      >
         Output will appear here...
       </div>
     </div>
@@ -63,8 +89,61 @@
         const editor = monaco.editor.create(
           document.getElementById("container"),
           {
-            value:
-              "console.log('Hello World!');\n\nfunction add(a, b) {\n  return a + b;\n}",
+            value: `// === Primitives ===
+console.log("string");
+console.log(42);
+console.log(3.14);
+console.log(true);
+console.log(false);
+console.log(null);
+console.log(undefined);
+console.log(NaN);
+console.log(Infinity);
+console.log(-Infinity);
+
+// === Multiple args ===
+console.log("a", "b", "c");
+console.log(1, 2, 3);
+console.log("mixed", 42, true, null);
+
+// === Objects & Arrays ===
+console.log({ name: "Alice", age: 30 });
+console.log([1, 2, 3]);
+console.log([{ id: 1 }, { id: 2 }]);
+console.log({ nested: { deep: { value: 99 } } });
+console.log({ arr: [1, [2, [3]]] });
+
+// === Warnings ===
+console.warn("simple warning");
+console.warn("deprecated API usage");
+console.warn("something might be wrong", { code: 42 });
+
+// === Errors ===
+console.error("simple error");
+console.error("failed to fetch", { status: 404 });
+console.error(new Error("something broke"));
+console.error("multiple", "error", "args");
+
+// === Long output ===
+console.log("a".repeat(200));
+console.log(Array.from({ length: 20 }, (_, i) => i));
+
+// === Async (fetch simulation) ===
+Promise.resolve({ user: "Bob", score: 100 }).then((val) =>
+  console.log("async resolved:", val)
+);
+
+Promise.reject(new Error("async failure")).catch((err) =>
+  console.error("async rejected:", err)
+);
+
+setTimeout(() => console.log("setTimeout fired after 500ms"), 500);
+setTimeout(() => console.warn("setTimeout warning after 1s"), 1000);
+setTimeout(() => console.error("setTimeout error after 1.5s"), 1500);
+
+// === Thrown error (caught by editor) ===
+// Uncomment to test runtime error display:
+// throw new Error("uncaught runtime error");`,
             language: "javascript",
             theme: "vs-dark",
             automaticLayout: true,
@@ -80,26 +159,46 @@
         });
 
         function runCode(code) {
+          outputDiv.innerHTML = "";
+
+          function appendLine(text, colorClass) {
+            if (outputDiv.firstChild) {
+              const hr = document.createElement("hr");
+              hr.className = "border-zinc-700 my-1";
+              outputDiv.appendChild(hr);
+            }
+            const span = document.createElement("span");
+            span.className = colorClass;
+            span.textContent = text;
+            outputDiv.appendChild(span);
+          }
+
+          function stringify(a) {
+            if (a instanceof Error) return a.message;
+            if (typeof a === "object" && a !== null)
+              return JSON.stringify(a, null, 2);
+            return String(a);
+          }
+
+          const customConsole = {
+            log: (...args) =>
+              appendLine(args.map(stringify).join(" "), "text-sky-300"),
+            error: (...args) =>
+              appendLine(
+                "[error] " + args.map(stringify).join(" "),
+                "text-red-400",
+              ),
+            warn: (...args) =>
+              appendLine(
+                "[warn] " + args.map(stringify).join(" "),
+                "text-yellow-400",
+              ),
+          };
+
           try {
-            let logs = [];
-            const customConsole = {
-              log: (...args) =>
-                logs.push(
-                  args
-                    .map((a) =>
-                      typeof a === "object" ? JSON.stringify(a, null, 2) : String(a)
-                    )
-                    .join(" ")
-                ),
-              error: (...args) => logs.push("[error] " + args.join(" ")),
-              warn: (...args) => logs.push("[warn] " + args.join(" ")),
-            };
             new Function("console", code)(customConsole);
-            outputDiv.textContent = logs.length ? logs.join("\n") : "";
-            outputDiv.className = outputDiv.className.replace(/text-\S+/, "text-sky-300");
           } catch (err) {
-            outputDiv.className = outputDiv.className.replace(/text-\S+/, "text-red-400");
-            outputDiv.textContent = err.message;
+            appendLine(err.message, "text-red-400");
           }
         }
 
