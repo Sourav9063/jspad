@@ -45,18 +45,55 @@
         height: 100%;
         border-right: 1px solid #333;
       }
-      #output {
+      #right-panel {
         width: 40%;
+        display: flex;
+        flex-direction: column;
         background: #1e1e1e;
+        font-family: monospace;
+        overflow: hidden;
+      }
+      #toolbar {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 6px 12px;
+        background: #252526;
+        border-bottom: 1px solid #333;
+      }
+      #format-btn {
+        padding: 3px 10px;
+        font-size: 12px;
+        font-family: monospace;
+        background: #0e639c;
+        color: #fff;
+        border: none;
+        border-radius: 3px;
+        cursor: pointer;
+      }
+      #format-btn:hover { background: #1177bb; }
+      #toolbar-hint {
+        font-size: 11px;
+        color: #555;
+      }
+      #output {
+        flex: 1;
         color: #75beff;
         padding: 20px;
-        font-family: monospace;
+        overflow: auto;
+        white-space: pre-wrap;
       }
     </style>
   </head>
   <body>
     <div id="container"></div>
-    <div id="output">Output will appear here...</div>
+    <div id="right-panel">
+      <div id="toolbar">
+        <button id="format-btn">Format</button>
+        <span id="toolbar-hint">Shift+Alt+F</span>
+      </div>
+      <div id="output">Output will appear here...</div>
+    </div>
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.44.0/min/vs/loader.min.js"></script>
     <script>
@@ -67,7 +104,6 @@
       });
 
       require(["vs/editor/editor.main"], function () {
-        // Initialize the editor
         const editor = monaco.editor.create(
           document.getElementById("container"),
           {
@@ -77,28 +113,45 @@
             theme: "vs-dark",
             automaticLayout: true,
             fontSize: 16,
+            formatOnPaste: true,
           },
         );
 
         const outputDiv = document.getElementById("output");
 
-        // Run code on every change
-        editor.onDidChangeModelContent(() => {
+        document.getElementById("format-btn").addEventListener("click", () => {
+          editor.getAction("editor.action.formatDocument").run();
+        });
+
+        function runCode(code) {
           try {
-            const code = editor.getValue();
             let logs = [];
             const customConsole = {
-              log: (...args) => logs.push(args.join(" ")),
+              log: (...args) =>
+                logs.push(
+                  args
+                    .map((a) =>
+                      typeof a === "object" ? JSON.stringify(a, null, 2) : String(a)
+                    )
+                    .join(" ")
+                ),
+              error: (...args) => logs.push("[error] " + args.join(" ")),
+              warn: (...args) => logs.push("[warn] " + args.join(" ")),
             };
-
             new Function("console", code)(customConsole);
-            outputDiv.textContent = logs.join("\n");
+            outputDiv.textContent = logs.length ? logs.join("\n") : "";
             outputDiv.style.color = "#75beff";
           } catch (err) {
             outputDiv.style.color = "#ff5555";
             outputDiv.textContent = err.message;
           }
+        }
+
+        editor.onDidChangeModelContent(() => {
+          runCode(editor.getValue());
         });
+
+        runCode(editor.getValue());
       });
     </script>
   </body>
