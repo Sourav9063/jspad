@@ -55,9 +55,9 @@
       }
     </script>
   </head>
-  <body class="flex h-screen bg-zinc-900 overflow-hidden">
-    <div class="w-3/5 h-full flex flex-col border-r border-zinc-700">
-      <div class="flex items-center justify-end px-3 h-[30px] bg-zinc-800 border-b border-zinc-700">
+  <body class="flex h-screen bg-black overflow-hidden">
+    <div class="w-3/5 h-full flex flex-col border-r border-zinc-800">
+      <div class="flex items-center justify-end px-3 h-[30px] bg-black border-b border-zinc-800">
         <button id="copy-editor-btn" title="Copy code" class="text-zinc-400 hover:text-white cursor-pointer transition-colors">
           <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="8" height="4" x="8" y="2" rx="1" ry="1"></rect><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"></path></svg>
         </button>
@@ -66,7 +66,7 @@
     </div>
     <div class="w-2/5 flex flex-col overflow-hidden">
       <div
-        class="flex items-center gap-2 px-3 h-[30px] bg-zinc-800 border-b border-zinc-700"
+        class="flex items-center gap-2 px-3 h-[30px] bg-black border-b border-zinc-800"
       >
         <button
           id="format-btn"
@@ -98,6 +98,19 @@
       });
 
       require(["vs/editor/editor.main"], function () {
+        monaco.editor.defineTheme("pitch-black", {
+          base: "vs-dark",
+          inherit: true,
+          rules: [],
+          colors: {
+            "editor.background": "#000000",
+            "editor.lineHighlightBackground": "#111111",
+            "editorLineNumber.foreground": "#444444",
+            "editorGutter.background": "#000000",
+            "minimap.background": "#000000",
+          },
+        });
+
         const editor = monaco.editor.create(
           document.getElementById("container"),
           {
@@ -157,7 +170,7 @@ setTimeout(() => console.error("setTimeout error after 1.5s"), 1500);
 // Uncomment to test runtime error display:
 // throw new Error("uncaught runtime error");`,
             language: "javascript",
-            theme: "vs-dark",
+            theme: "pitch-black",
             automaticLayout: true,
             fontSize: 16,
             formatOnPaste: true,
@@ -195,7 +208,7 @@ setTimeout(() => console.error("setTimeout error after 1.5s"), 1500);
           function appendLine(text, colorClass) {
             if (outputDiv.firstChild) {
               const hr = document.createElement("hr");
-              hr.className = "border-zinc-700 my-1";
+              hr.className = "border-zinc-800 my-1";
               outputDiv.appendChild(hr);
             }
             const span = document.createElement("span");
