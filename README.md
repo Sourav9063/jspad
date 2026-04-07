@@ -1,24 +1,28 @@
-# JS Pad — Online JavaScript Playground & Scratchpad
+# JS Pad — Online JavaScript Editor, Playground & Code Sandbox
 
 **Live:** [sourav9063.github.io/jspad](https://sourav9063.github.io/jspad)
 
-JS Pad is a free, instant JavaScript playground that runs entirely in your browser. No setup, no install, no account — just open and start writing JavaScript.
+JS Pad is a free, instant JavaScript editor powered by the same editor engine as VS Code, running entirely in your browser. No setup, no install, no account — just open and start writing JavaScript. A great CodePen alternative focused purely on JS.
 
 ## Features
 
-- Monaco editor (same engine as VS Code) with syntax highlighting and autocomplete
-- Live output panel — results appear as you type
-- `console.log` output captured and displayed
-- Error messages highlighted in red
-- Zero dependencies to install
+- **VS Code editor** with syntax highlighting, autocomplete, and minimap
+- **Live output panel** — results appear as you type, no run button needed
+- **console.log / warn / error** captured and color-coded in the output panel
+- **Code formatting** via the Format button or `Shift+Alt+F`
+- **Resizable panels** — drag the divider to adjust editor/output split
+- **Copy buttons** — copy editor code or output to clipboard with one click
+- **Pitch-black dark theme** — easy on the eyes
+- **Zero dependencies** — no install, no build step, no account required
 
 ## Use cases
 
 - Quick JS scratchpad for testing ideas
 - Learn JavaScript without any local setup
 - Debug small snippets on the fly
-- Share runnable JS examples
+- CodePen alternative for pure JavaScript experiments
+- Instant JS REPL in your browser
 
 ## Keywords
 
-js pad, jspad, javascript playground, online javascript editor, js scratchpad, javascript scratchpad, run javascript online, browser javascript editor, js repl, javascript repl, code sandbox
+js pad, jspad, javascript playground, online javascript editor, vscode editor online, vs code editor online, js web editor, javascript web editor, js scratchpad, javascript scratchpad, run javascript online, browser javascript editor, js repl, javascript repl, code sandbox, online code editor, codepen alternative, online js compiler, javascript runner, js ide online
