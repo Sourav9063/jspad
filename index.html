@@ -56,7 +56,7 @@
     </script>
   </head>
   <body class="flex h-screen bg-black overflow-hidden">
-    <div class="w-3/5 h-full flex flex-col border-r border-zinc-800">
+    <div id="editor-panel" class="h-full flex flex-col" style="width:60%">
       <div class="flex items-center justify-end px-3 h-[30px] bg-black border-b border-zinc-800">
         <button id="copy-editor-btn" title="Copy code" class="text-zinc-400 hover:text-white cursor-pointer transition-colors">
           <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="8" height="4" x="8" y="2" rx="1" ry="1"></rect><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"></path></svg>
@@ -64,7 +64,10 @@
       </div>
       <div id="container" class="flex-1"></div>
     </div>
-    <div class="w-2/5 flex flex-col overflow-hidden">
+
+    <div id="divider" class="w-1 h-full bg-zinc-800 hover:bg-sky-600 cursor-col-resize transition-colors flex-shrink-0"></div>
+
+    <div id="output-panel" class="flex flex-col overflow-hidden" style="flex:1">
       <div
         class="flex items-center gap-2 px-3 h-[30px] bg-black border-b border-zinc-800"
       >
@@ -251,6 +254,32 @@ setTimeout(() => console.error("setTimeout error after 1.5s"), 1500);
         });
 
         runCode(editor.getValue());
+      });
+
+      // Divider drag to resize
+      const divider = document.getElementById("divider");
+      const editorPanel = document.getElementById("editor-panel");
+
+      divider.addEventListener("mousedown", (e) => {
+        e.preventDefault();
+        document.body.style.cursor = "col-resize";
+        document.body.style.userSelect = "none";
+
+        function onMouseMove(e) {
+          const totalWidth = document.body.clientWidth;
+          const newWidth = Math.min(Math.max(e.clientX, 150), totalWidth - 150);
+          editorPanel.style.width = newWidth + "px";
+        }
+
+        function onMouseUp() {
+          document.body.style.cursor = "";
+          document.body.style.userSelect = "";
+          document.removeEventListener("mousemove", onMouseMove);
+          document.removeEventListener("mouseup", onMouseUp);
+        }
+
+        document.addEventListener("mousemove", onMouseMove);
+        document.addEventListener("mouseup", onMouseUp);
       });
     </script>
   </body>
