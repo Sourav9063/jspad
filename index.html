@@ -21,6 +21,8 @@
     <meta name="twitter:title" content="JS Pad — Online JavaScript Playground & Scratchpad" />
     <meta name="twitter:description" content="Free, instant online JavaScript playground. Write and run JS code in your browser — no setup required." />
 
+    <script src="https://cdn.tailwindcss.com"></script>
+
     <!-- Structured Data -->
     <script type="application/ld+json">
     {
@@ -34,65 +36,19 @@
       "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD" }
     }
     </script>
-    <style>
-      body {
-        margin: 0;
-        display: flex;
-        height: 100vh;
-      }
-      #container {
-        width: 60%;
-        height: 100%;
-        border-right: 1px solid #333;
-      }
-      #right-panel {
-        width: 40%;
-        display: flex;
-        flex-direction: column;
-        background: #1e1e1e;
-        font-family: monospace;
-        overflow: hidden;
-      }
-      #toolbar {
-        display: flex;
-        align-items: center;
-        gap: 8px;
-        padding: 6px 12px;
-        background: #252526;
-        border-bottom: 1px solid #333;
-      }
-      #format-btn {
-        padding: 3px 10px;
-        font-size: 12px;
-        font-family: monospace;
-        background: #0e639c;
-        color: #fff;
-        border: none;
-        border-radius: 3px;
-        cursor: pointer;
-      }
-      #format-btn:hover { background: #1177bb; }
-      #toolbar-hint {
-        font-size: 11px;
-        color: #555;
-      }
-      #output {
-        flex: 1;
-        color: #75beff;
-        padding: 20px;
-        overflow: auto;
-        white-space: pre-wrap;
-      }
-    </style>
   </head>
-  <body>
-    <div id="container"></div>
-    <div id="right-panel">
-      <div id="toolbar">
-        <button id="format-btn">Format</button>
-        <span id="toolbar-hint">Shift+Alt+F</span>
+  <body class="flex h-screen bg-zinc-900 overflow-hidden">
+    <div id="container" class="w-3/5 h-full border-r border-zinc-700"></div>
+    <div class="w-2/5 flex flex-col overflow-hidden">
+      <div class="flex items-center gap-2 px-3 py-1.5 bg-zinc-800 border-b border-zinc-700">
+        <button id="format-btn" class="px-2.5 py-0.5 text-xs font-mono bg-sky-700 hover:bg-sky-600 text-white rounded cursor-pointer">
+          Format
+        </button>
+        <span class="text-xs text-zinc-500 font-mono">Shift+Alt+F</span>
       </div>
-      <div id="output">Output will appear here...</div>
+      <div id="output" class="flex-1 text-sky-300 font-mono text-sm p-5 overflow-auto whitespace-pre-wrap">
+        Output will appear here...
+      </div>
     </div>
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.44.0/min/vs/loader.min.js"></script>
@@ -140,9 +96,9 @@
             };
             new Function("console", code)(customConsole);
             outputDiv.textContent = logs.length ? logs.join("\n") : "";
-            outputDiv.style.color = "#75beff";
+            outputDiv.className = outputDiv.className.replace(/text-\S+/, "text-sky-300");
           } catch (err) {
-            outputDiv.style.color = "#ff5555";
+            outputDiv.className = outputDiv.className.replace(/text-\S+/, "text-red-400");
             outputDiv.textContent = err.message;
           }
         }
