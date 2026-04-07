@@ -56,10 +56,17 @@
     </script>
   </head>
   <body class="flex h-screen bg-zinc-900 overflow-hidden">
-    <div id="container" class="w-3/5 h-full border-r border-zinc-700"></div>
+    <div class="w-3/5 h-full flex flex-col border-r border-zinc-700">
+      <div class="flex items-center justify-end px-3 h-[30px] bg-zinc-800 border-b border-zinc-700">
+        <button id="copy-editor-btn" title="Copy code" class="text-zinc-400 hover:text-white cursor-pointer transition-colors">
+          <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="8" height="4" x="8" y="2" rx="1" ry="1"></rect><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"></path></svg>
+        </button>
+      </div>
+      <div id="container" class="flex-1"></div>
+    </div>
     <div class="w-2/5 flex flex-col overflow-hidden">
       <div
-        class="flex items-center gap-2 px-3 py-1.5 bg-zinc-800 border-b border-zinc-700"
+        class="flex items-center gap-2 px-3 h-[30px] bg-zinc-800 border-b border-zinc-700"
       >
         <button
           id="format-btn"
@@ -68,6 +75,11 @@
           Format
         </button>
         <span class="text-xs text-zinc-500 font-mono">Shift+Alt+F</span>
+        <div class="ml-auto">
+          <button id="copy-output-btn" title="Copy output" class="text-zinc-400 hover:text-white cursor-pointer transition-colors">
+            <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="8" height="4" x="8" y="2" rx="1" ry="1"></rect><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"></path></svg>
+          </button>
+        </div>
       </div>
       <div
         id="output"
@@ -156,6 +168,25 @@ setTimeout(() => console.error("setTimeout error after 1.5s"), 1500);
 
         document.getElementById("format-btn").addEventListener("click", () => {
           editor.getAction("editor.action.formatDocument").run();
+        });
+
+        function flashCopied(btn) {
+          const orig = btn.innerHTML;
+          btn.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>`;
+          btn.classList.add("text-green-400");
+          setTimeout(() => { btn.innerHTML = orig; btn.classList.remove("text-green-400"); }, 1500);
+        }
+
+        document.getElementById("copy-editor-btn").addEventListener("click", () => {
+          navigator.clipboard.writeText(editor.getValue()).then(() =>
+            flashCopied(document.getElementById("copy-editor-btn"))
+          );
+        });
+
+        document.getElementById("copy-output-btn").addEventListener("click", () => {
+          navigator.clipboard.writeText(outputDiv.innerText).then(() =>
+            flashCopied(document.getElementById("copy-output-btn"))
+          );
         });
 
         function runCode(code) {
