@@ -261,9 +261,9 @@ Promise.reject(new Error("async failure")).catch((err) =>
   console.error("async rejected:", err)
 );
 
-setTimeout(() => console.log("setTimeout fired after 500ms"), 500);
-setTimeout(() => console.warn("setTimeout warning after 1s"), 1000);
-setTimeout(() => console.error("setTimeout error after 1.5s"), 1500);
+// setTimeout(() => console.log("setTimeout fired after 500ms"), 500);
+// setTimeout(() => console.warn("setTimeout warning after 1s"), 1000);
+// setTimeout(() => console.error("setTimeout error after 1.5s"), 1500);
 
 // === Thrown error (caught by editor) ===
 // Uncomment to test runtime error display:
