@@ -4,11 +4,11 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>JS Pad — Online JavaScript Editor, Playground & Code Sandbox</title>
+  <title>JS Pad: Vim-Enabled JavaScript Playground and Online Editor</title>
   <meta name="description"
-    content="JS Pad is a free online JavaScript editor powered by the VS Code editor engine. Write, run, and debug JS code instantly in your browser — like CodePen but for JS. No setup, no account, no install required." />
+    content="The first Vim-enabled JavaScript playground on the web. JS Pad brings full Vim keybindings to an online JS editor powered by the VS Code engine. Write, run, and debug JS instantly in your browser. No setup, no account required." />
   <meta name="keywords"
-    content="js pad, jspad, javascript playground, online javascript editor, vscode editor online, vs code editor online, js scratchpad, javascript scratchpad, run javascript online, browser javascript editor, js repl, javascript repl, code sandbox, online code editor, web code editor, codepen alternative, javascript web editor, js web editor, online js compiler, javascript runner, js runner, online javascript compiler, live javascript editor, javascript code pad, js notepad, code pen, js ide online, javascript ide online, instant javascript, no setup javascript, browser repl" />
+    content="vim javascript playground, vim online editor, vim js editor, vim mode browser, vim keybindings online, js pad, jspad, javascript playground, online javascript editor, vscode editor online, vs code editor online, js scratchpad, javascript scratchpad, run javascript online, browser javascript editor, js repl, javascript repl, code sandbox, online code editor, web code editor, codepen alternative, javascript web editor, js web editor, online js compiler, javascript runner, js runner, online javascript compiler, live javascript editor, javascript code pad, js notepad, code pen, js ide online, javascript ide online, instant javascript, no setup javascript, browser repl" />
   <meta name="author" content="Sourav" />
   <meta name="robots" content="index, follow" />
   <link rel="icon" href="https://sourav9063.github.io/favicon.ico" />
@@ -17,16 +17,16 @@
   <!-- Open Graph / Social -->
   <meta property="og:type" content="website" />
   <meta property="og:url" content="https://sourav9063.github.io/jspad" />
-  <meta property="og:title" content="JS Pad — Online JavaScript Editor, Playground & Code Sandbox" />
+  <meta property="og:title" content="JS Pad: Vim-Enabled JavaScript Playground and Online Editor" />
   <meta property="og:description"
-    content="Free online JavaScript editor powered by the VS Code editor engine. Write and run JS code instantly in your browser — no setup, no account required. A great CodePen alternative for JavaScript." />
+    content="The first Vim-enabled JavaScript playground on the web. Full Vim keybindings, VS Code engine, live execution, all in your browser. No setup, no account required." />
   <meta property="og:site_name" content="JS Pad" />
 
   <!-- Twitter -->
   <meta name="twitter:card" content="summary" />
-  <meta name="twitter:title" content="JS Pad — Online JavaScript Editor, Playground & Code Sandbox" />
+  <meta name="twitter:title" content="JS Pad: Vim-Enabled JavaScript Playground and Online Editor" />
   <meta name="twitter:description"
-    content="Free online JavaScript editor powered by the VS Code editor engine. Write and run JS code instantly in your browser — no setup, no account required." />
+    content="The first Vim-enabled JavaScript playground on the web. Full Vim keybindings, VS Code engine, live execution, all in your browser. No setup, no account required." />
 
   <script src="https://cdn.tailwindcss.com"></script>
 
@@ -43,12 +43,13 @@
           "JavaScript Web Editor"
         ],
         "url": "https://sourav9063.github.io/jspad",
-        "description": "Free online JavaScript editor powered by the VS Code editor engine. Write, run, and debug JavaScript code instantly in your browser. No setup, no account, no install required.",
+        "description": "The first Vim-enabled JavaScript playground on the web. Full Vim keybindings powered by the VS Code engine — write, run, and debug JavaScript instantly in your browser. No setup, no account, no install required.",
         "applicationCategory": "DeveloperApplication",
         "applicationSubCategory": "Code Editor",
         "operatingSystem": "Any",
         "browserRequirements": "Requires JavaScript",
         "featureList": [
+          "Vim mode with full keybindings and relative line numbers — first of its kind in a browser JS playground",
           "VS Code editor with syntax highlighting and autocomplete",
           "Live JavaScript execution",
           "console.log output capture",
@@ -77,6 +78,10 @@
           </svg>
           Star
         </a>
+        <button id="vim-toggle-btn" title="Toggle Vim mode"
+          class="px-1.5 py-0.5 text-xs font-mono rounded cursor-pointer transition-colors text-zinc-500 hover:text-white border border-zinc-700 hover:border-zinc-500">
+          VIM
+        </button>
         <button id="copy-editor-btn" title="Copy code"
           class="text-zinc-400 hover:text-white cursor-pointer transition-colors">
           <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none"
@@ -87,7 +92,12 @@
         </button>
       </div>
     </div>
-    <div id="container" class="flex-1"></div>
+    <div class="relative flex-1">
+      <div id="container" class="absolute inset-0"></div>
+      <div id="vim-statusbar"
+        class="hidden absolute bottom-0 left-0 right-0 h-[22px] px-3 bg-black border-t border-zinc-800 font-mono text-xs text-zinc-400 flex items-center pointer-events-none">
+      </div>
+    </div>
   </div>
 
   <div id="divider" class="w-1 h-full bg-zinc-800 hover:bg-sky-600 cursor-col-resize transition-colors flex-shrink-0">
@@ -216,6 +226,43 @@ setTimeout(() => console.error("setTimeout error after 1.5s"), 1500);
       );
 
       const outputDiv = document.getElementById("output");
+
+      const VIM_KEY = "jspad_vim";
+      const vimBtn = document.getElementById("vim-toggle-btn");
+      const vimStatusbar = document.getElementById("vim-statusbar");
+      let vimMode = null;
+      let MonacoVim = null;
+
+      function setVimActive(active) {
+        if (!MonacoVim) return;
+        if (active) {
+          vimMode = MonacoVim.initVimMode(editor, vimStatusbar);
+          editor.updateOptions({ lineNumbers: "relative" });
+          vimStatusbar.classList.remove("hidden");
+          vimBtn.classList.remove("text-zinc-500", "border-zinc-700");
+          vimBtn.classList.add("text-sky-400", "border-sky-600");
+        } else {
+          if (vimMode) { vimMode.dispose(); vimMode = null; }
+          editor.updateOptions({ lineNumbers: "on" });
+          vimStatusbar.classList.add("hidden");
+          vimBtn.classList.add("text-zinc-500", "border-zinc-700");
+          vimBtn.classList.remove("text-sky-400", "border-sky-600");
+        }
+        localStorage.setItem(VIM_KEY, active ? "1" : "0");
+      }
+
+      vimBtn.addEventListener("click", () => setVimActive(!vimMode));
+
+      const savedDefine = window.define;
+      window.define = function () { return savedDefine.apply(this, arguments); };
+      const vimScript = document.createElement("script");
+      vimScript.src = "https://cdn.jsdelivr.net/npm/monaco-vim@0.4.4/dist/monaco-vim.umd.js";
+      vimScript.onload = function () {
+        window.define = savedDefine;
+        MonacoVim = window.MonacoVim;
+        if (localStorage.getItem(VIM_KEY) === "1") setVimActive(true);
+      };
+      document.head.appendChild(vimScript);
 
       document.getElementById("format-btn").addEventListener("click", () => {
         editor.getAction("editor.action.formatDocument").run();
