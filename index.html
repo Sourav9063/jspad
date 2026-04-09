@@ -161,6 +161,55 @@
       });
 
       const STORAGE_KEY = "jspad_code";
+      const STORAGE_TS_KEY = "jspad_ts_code";
+
+      const defaultTsCode = `// === Types & Interfaces ===
+interface User {
+  name: string;
+  age: number;
+  role?: "admin" | "viewer";
+}
+
+function greet(user: User): string {
+  return \`Hello, \${user.name} (\${user.role ?? "viewer"})\`;
+}
+
+const alice: User = { name: "Alice", age: 30, role: "admin" };
+console.log(greet(alice));
+
+// === Generics ===
+function first<T>(arr: T[]): T | undefined {
+  return arr[0];
+}
+
+console.log(first([10, 20, 30]));
+console.log(first(["a", "b", "c"]));
+
+// === Enums ===
+enum Direction {
+  Up = "UP",
+  Down = "DOWN",
+  Left = "LEFT",
+  Right = "RIGHT",
+}
+
+console.log(Direction.Up);
+
+// === Type narrowing ===
+function format(val: string | number): string {
+  if (typeof val === "number") return val.toFixed(2);
+  return val.toUpperCase();
+}
+
+console.log(format(3.14159));
+console.log(format("hello"));
+
+// === Async / Promise ===
+async function fetchUser(id: number): Promise<User> {
+  return { name: \`User_\${id}\`, age: 20 + id };
+}
+
+fetchUser(1).then((u) => console.log("fetched:", u));`;
 
       const savedCode = localStorage.getItem(STORAGE_KEY);
 
@@ -223,7 +272,7 @@ setTimeout(() => console.error("setTimeout error after 1.5s"), 1500);
       const editor = monaco.editor.create(
         document.getElementById("container"),
         {
-          value: savedCode ?? defaultCode,
+          value: savedCode || defaultCode,
           language: "javascript",
           theme: "pitch-black",
           automaticLayout: true,
@@ -272,9 +321,23 @@ setTimeout(() => console.error("setTimeout error after 1.5s"), 1500);
       let tsLoading = false;
 
       function applyTsMode(active) {
+        // Save current content to the outgoing mode's key
+        if (active) {
+          localStorage.setItem(STORAGE_KEY, editor.getValue());
+        } else {
+          localStorage.setItem(STORAGE_TS_KEY, editor.getValue());
+        }
+
         tsActive = active;
         const model = editor.getModel();
         monaco.editor.setModelLanguage(model, active ? "typescript" : "javascript");
+
+        // Load saved content for the new mode, or fall back to default
+        const saved = active
+          ? localStorage.getItem(STORAGE_TS_KEY)
+          : localStorage.getItem(STORAGE_KEY);
+        editor.setValue(saved || (active ? defaultTsCode : defaultCode));
+
         if (active) {
           tsBtn.classList.remove("text-zinc-500", "border-zinc-700");
           tsBtn.classList.add("text-sky-400", "border-sky-600");
@@ -400,7 +463,7 @@ setTimeout(() => console.error("setTimeout error after 1.5s"), 1500);
 
       editor.onDidChangeModelContent(() => {
         const code = editor.getValue();
-        localStorage.setItem(STORAGE_KEY, code);
+        localStorage.setItem(tsActive ? STORAGE_TS_KEY : STORAGE_KEY, code);
         runCode(code);
       });
 
