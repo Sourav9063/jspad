@@ -138,10 +138,11 @@
         },
       });
 
-      const editor = monaco.editor.create(
-        document.getElementById("container"),
-        {
-          value: `// === Primitives ===
+      const STORAGE_KEY = "jspad_code";
+
+      const savedCode = localStorage.getItem(STORAGE_KEY);
+
+      const defaultCode = `// === Primitives ===
 console.log("string");
 console.log(42);
 console.log(3.14);
@@ -195,7 +196,12 @@ setTimeout(() => console.error("setTimeout error after 1.5s"), 1500);
 
 // === Thrown error (caught by editor) ===
 // Uncomment to test runtime error display:
-// throw new Error("uncaught runtime error");`,
+// throw new Error("uncaught runtime error");`;
+
+      const editor = monaco.editor.create(
+        document.getElementById("container"),
+        {
+          value: savedCode ?? defaultCode,
           language: "javascript",
           theme: "pitch-black",
           automaticLayout: true,
@@ -290,7 +296,9 @@ setTimeout(() => console.error("setTimeout error after 1.5s"), 1500);
       }
 
       editor.onDidChangeModelContent(() => {
-        runCode(editor.getValue());
+        const code = editor.getValue();
+        localStorage.setItem(STORAGE_KEY, code);
+        runCode(code);
       });
 
       runCode(editor.getValue());
