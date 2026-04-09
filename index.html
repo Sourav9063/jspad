@@ -54,7 +54,8 @@
           "Live JavaScript execution",
           "console.log output capture",
           "Code formatting (Prettier)",
-          "Resizable editor and output panels",
+          "Responsive layout — horizontal split on mobile, vertical on desktop",
+          "Resizable panels with drag handle",
           "Copy code and output to clipboard",
           "Minimap",
           "Dark pitch-black theme"
@@ -64,8 +65,8 @@
     </script>
 </head>
 
-<body class="flex h-screen bg-black overflow-hidden">
-  <div id="editor-panel" class="flex flex-col" style="width: 60%">
+<body class="flex flex-col md:flex-row h-screen bg-black overflow-hidden">
+  <div id="editor-panel" class="flex flex-col">
     <div class="flex items-center justify-between px-3 h-[30px] bg-black border-b border-zinc-800">
       <span class="text-white font-mono font-semibold tracking-tight text-sm">JS<span
           class="text-sky-400">Pad</span></span>
@@ -100,7 +101,11 @@
     </div>
   </div>
 
-  <div id="divider" class="w-1 h-full bg-zinc-800 hover:bg-sky-600 cursor-col-resize transition-colors flex-shrink-0">
+  <div id="divider"
+    class="relative h-3 w-full md:h-full md:w-1 bg-zinc-800 hover:bg-sky-600 cursor-row-resize md:cursor-col-resize transition-colors flex-shrink-0 flex items-center justify-center">
+    <div class="md:hidden flex gap-1 pointer-events-none">
+      <span class="w-8 h-1 rounded-full bg-zinc-500"></span>
+    </div>
   </div>
 
   <div id="output-panel" class="flex flex-col overflow-hidden" style="flex: 1">
@@ -355,27 +360,61 @@ setTimeout(() => console.error("setTimeout error after 1.5s"), 1500);
     const divider = document.getElementById("divider");
     const editorPanel = document.getElementById("editor-panel");
 
-    divider.addEventListener("mousedown", (e) => {
-      e.preventDefault();
-      document.body.style.cursor = "col-resize";
+    function isMobile() { return window.innerWidth < 768; }
+
+    function setInitialSize() {
+      if (isMobile()) {
+        editorPanel.style.width = "";
+        editorPanel.style.height = "50%";
+      } else {
+        editorPanel.style.height = "";
+        editorPanel.style.width = "60%";
+      }
+    }
+
+    setInitialSize();
+    window.addEventListener("resize", setInitialSize);
+
+    function startDrag(getClientPos) {
+      const mobile = isMobile();
+      document.body.style.cursor = mobile ? "row-resize" : "col-resize";
       document.body.style.userSelect = "none";
 
-      function onMouseMove(e) {
-        const totalWidth = document.body.clientWidth;
-        const newWidth = Math.min(Math.max(e.clientX, 150), totalWidth - 150);
-        editorPanel.style.width = newWidth + "px";
+      function onMove(e) {
+        const pos = getClientPos(e);
+        if (mobile) {
+          const newHeight = Math.min(Math.max(pos.y, 100), document.body.clientHeight - 100);
+          editorPanel.style.height = newHeight + "px";
+        } else {
+          const newWidth = Math.min(Math.max(pos.x, 150), document.body.clientWidth - 150);
+          editorPanel.style.width = newWidth + "px";
+        }
       }
 
-      function onMouseUp() {
+      function onUp() {
         document.body.style.cursor = "";
         document.body.style.userSelect = "";
-        document.removeEventListener("mousemove", onMouseMove);
-        document.removeEventListener("mouseup", onMouseUp);
+        document.removeEventListener("mousemove", onMove);
+        document.removeEventListener("mouseup", onUp);
+        document.removeEventListener("touchmove", onMove);
+        document.removeEventListener("touchend", onUp);
       }
 
-      document.addEventListener("mousemove", onMouseMove);
-      document.addEventListener("mouseup", onMouseUp);
+      document.addEventListener("mousemove", onMove);
+      document.addEventListener("mouseup", onUp);
+      document.addEventListener("touchmove", onMove, { passive: false });
+      document.addEventListener("touchend", onUp);
+    }
+
+    divider.addEventListener("mousedown", (e) => {
+      e.preventDefault();
+      startDrag((e) => ({ x: e.clientX, y: e.clientY }));
     });
+
+    divider.addEventListener("touchstart", (e) => {
+      e.preventDefault();
+      startDrag((e) => ({ x: e.touches[ 0 ].clientX, y: e.touches[ 0 ].clientY }));
+    }, { passive: false });
   </script>
 </body>
 

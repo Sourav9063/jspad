@@ -11,7 +11,8 @@ JS Pad is the first Vim-enabled JavaScript playground on the web. Powered by the
 - **Live output panel** results appear as you type, no run button needed
 - **console.log / warn / error** captured and color-coded in the output panel
 - **Code formatting** via the Format button or `Shift+Alt+F`
-- **Resizable panels** drag the divider to adjust editor/output split
+- **Responsive layout** horizontal split on mobile, vertical on desktop
+- **Resizable panels** drag the divider (with visible handle on mobile) to adjust editor/output split
 - **Copy buttons** copy editor code or output to clipboard with one click
 - **Auto-save** code is persisted to localStorage across sessions
 - **Pitch-black dark theme** easy on the eyes
