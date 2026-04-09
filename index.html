@@ -4,11 +4,11 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>JS Pad: Vim-Enabled JavaScript Playground and Online Editor</title>
+  <title>JS Pad: Vim-Enabled JavaScript & TypeScript Playground and Online Editor</title>
   <meta name="description"
-    content="The first Vim-enabled JavaScript playground on the web. JS Pad brings full Vim keybindings to an online JS editor powered by the VS Code engine. Write, run, and debug JS instantly in your browser. No setup, no account required." />
+    content="The first Vim-enabled JavaScript and TypeScript playground on the web. JS Pad brings full Vim keybindings to an online JS/TS editor powered by the VS Code engine. Write, run, and debug JS or TS instantly in your browser. No setup, no account required." />
   <meta name="keywords"
-    content="vim javascript playground, vim online editor, vim js editor, vim mode browser, vim keybindings online, js pad, jspad, javascript playground, online javascript editor, vscode editor online, vs code editor online, js scratchpad, javascript scratchpad, run javascript online, browser javascript editor, js repl, javascript repl, code sandbox, online code editor, web code editor, codepen alternative, javascript web editor, js web editor, online js compiler, javascript runner, js runner, online javascript compiler, live javascript editor, javascript code pad, js notepad, code pen, js ide online, javascript ide online, instant javascript, no setup javascript, browser repl" />
+    content="vim javascript playground, vim typescript playground, vim online editor, vim js editor, vim ts editor, vim mode browser, vim keybindings online, js pad, jspad, javascript playground, typescript playground, online javascript editor, online typescript editor, typescript browser, vscode editor online, vs code editor online, js scratchpad, typescript scratchpad, javascript scratchpad, run javascript online, run typescript online, browser javascript editor, js repl, typescript repl, javascript repl, code sandbox, online code editor, web code editor, codepen alternative, javascript web editor, typescript web editor, js web editor, online js compiler, online ts compiler, javascript runner, typescript runner, js runner, online javascript compiler, online typescript compiler, live javascript editor, live typescript editor, javascript code pad, typescript code pad, js notepad, code pen, js ide online, typescript ide online, javascript ide online, instant javascript, instant typescript, no setup javascript, no setup typescript, browser repl" />
   <meta name="author" content="Sourav" />
   <meta name="robots" content="index, follow" />
   <link rel="icon" href="https://sourav9063.github.io/favicon.ico" />
@@ -17,16 +17,16 @@
   <!-- Open Graph / Social -->
   <meta property="og:type" content="website" />
   <meta property="og:url" content="https://sourav9063.github.io/jspad" />
-  <meta property="og:title" content="JS Pad: Vim-Enabled JavaScript Playground and Online Editor" />
+  <meta property="og:title" content="JS Pad: Vim-Enabled JavaScript & TypeScript Playground and Online Editor" />
   <meta property="og:description"
-    content="The first Vim-enabled JavaScript playground on the web. Full Vim keybindings, VS Code engine, live execution, all in your browser. No setup, no account required." />
+    content="The first Vim-enabled JavaScript and TypeScript playground on the web. Full Vim keybindings, VS Code engine, live JS/TS execution, all in your browser. No setup, no account required." />
   <meta property="og:site_name" content="JS Pad" />
 
   <!-- Twitter -->
   <meta name="twitter:card" content="summary" />
-  <meta name="twitter:title" content="JS Pad: Vim-Enabled JavaScript Playground and Online Editor" />
+  <meta name="twitter:title" content="JS Pad: Vim-Enabled JavaScript & TypeScript Playground and Online Editor" />
   <meta name="twitter:description"
-    content="The first Vim-enabled JavaScript playground on the web. Full Vim keybindings, VS Code engine, live execution, all in your browser. No setup, no account required." />
+    content="The first Vim-enabled JavaScript and TypeScript playground on the web. Full Vim keybindings, VS Code engine, live JS/TS execution, all in your browser. No setup, no account required." />
 
   <script src="https://cdn.tailwindcss.com"></script>
 
@@ -40,18 +40,21 @@
           "JSPad",
           "JS Playground",
           "JavaScript Pad",
-          "JavaScript Web Editor"
+          "TypeScript Playground",
+          "JavaScript Web Editor",
+          "TypeScript Web Editor"
         ],
         "url": "https://sourav9063.github.io/jspad",
-        "description": "The first Vim-enabled JavaScript playground on the web. Full Vim keybindings powered by the VS Code engine — write, run, and debug JavaScript instantly in your browser. No setup, no account, no install required.",
+        "description": "The first Vim-enabled JavaScript and TypeScript playground on the web. Full Vim keybindings powered by the VS Code engine — write, run, and debug JS or TS instantly in your browser. No setup, no account, no install required.",
         "applicationCategory": "DeveloperApplication",
         "applicationSubCategory": "Code Editor",
         "operatingSystem": "Any",
         "browserRequirements": "Requires JavaScript",
         "featureList": [
           "Vim mode with full keybindings and relative line numbers — first of its kind in a browser JS playground",
-          "VS Code editor with syntax highlighting and autocomplete",
-          "Live JavaScript execution",
+          "TypeScript support with lazy-loaded compiler — toggle on demand, no page reload",
+          "VS Code editor with syntax highlighting, autocomplete, and TypeScript IntelliSense",
+          "Live JavaScript and TypeScript execution",
           "console.log output capture",
           "Code formatting (Prettier)",
           "Responsive layout — horizontal split on mobile, vertical on desktop",
@@ -79,6 +82,10 @@
           </svg>
           Star
         </a>
+        <button id="ts-toggle-btn" title="Toggle TypeScript mode"
+          class="px-1.5 py-0.5 text-xs font-mono rounded cursor-pointer transition-colors text-zinc-500 hover:text-white border border-zinc-700 hover:border-zinc-500">
+          TS
+        </button>
         <button id="vim-toggle-btn" title="Toggle Vim mode"
           class="px-1.5 py-0.5 text-xs font-mono rounded cursor-pointer transition-colors text-zinc-500 hover:text-white border border-zinc-700 hover:border-zinc-500">
           VIM
@@ -258,6 +265,47 @@ setTimeout(() => console.error("setTimeout error after 1.5s"), 1500);
 
       vimBtn.addEventListener("click", () => setVimActive(!vimMode));
 
+      const TS_KEY = "jspad_ts";
+      const tsBtn = document.getElementById("ts-toggle-btn");
+      let tsActive = false;
+      let tsLoaded = false;
+      let tsLoading = false;
+
+      function applyTsMode(active) {
+        tsActive = active;
+        const model = editor.getModel();
+        monaco.editor.setModelLanguage(model, active ? "typescript" : "javascript");
+        if (active) {
+          tsBtn.classList.remove("text-zinc-500", "border-zinc-700");
+          tsBtn.classList.add("text-sky-400", "border-sky-600");
+        } else {
+          tsBtn.classList.add("text-zinc-500", "border-zinc-700");
+          tsBtn.classList.remove("text-sky-400", "border-sky-600");
+        }
+        localStorage.setItem(TS_KEY, active ? "1" : "0");
+        runCode(editor.getValue());
+      }
+
+      function loadTypeScript(cb) {
+        if (tsLoaded) return cb();
+        if (tsLoading) return;
+        tsLoading = true;
+        tsBtn.textContent = "...";
+        const s = document.createElement("script");
+        s.src = "https://cdn.jsdelivr.net/npm/typescript/lib/typescript.js";
+        s.onload = () => { tsLoaded = true; tsBtn.textContent = "TS"; cb(); };
+        document.head.appendChild(s);
+      }
+
+      tsBtn.addEventListener("click", () => {
+        if (tsActive) { applyTsMode(false); return; }
+        loadTypeScript(() => applyTsMode(true));
+      });
+
+      if (localStorage.getItem(TS_KEY) === "1") {
+        loadTypeScript(() => applyTsMode(true));
+      }
+
       const savedDefine = window.define;
       window.define = function () { return savedDefine.apply(this, arguments); };
       const vimScript = document.createElement("script");
@@ -341,7 +389,10 @@ setTimeout(() => console.error("setTimeout error after 1.5s"), 1500);
         };
 
         try {
-          new Function("console", code)(customConsole);
+          const runnable = tsActive && tsLoaded
+            ? ts.transpileModule(code, { compilerOptions: { target: ts.ScriptTarget.ES2020 } }).outputText
+            : code;
+          new Function("console", runnable)(customConsole);
         } catch (err) {
           appendLine(err.message, "text-red-400");
         }
