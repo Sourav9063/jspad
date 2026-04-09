@@ -1,43 +1,47 @@
 <!doctype html>
 <html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>JS Pad — Online JavaScript Editor, Playground & Code Sandbox</title>
-    <meta
-      name="description"
-      content="JS Pad is a free online JavaScript editor powered by the VS Code editor engine. Write, run, and debug JS code instantly in your browser — like CodePen but for JS. No setup, no account, no install required."
-    />
-    <meta
-      name="keywords"
-      content="js pad, jspad, javascript playground, online javascript editor, vscode editor online, vs code editor online, js scratchpad, javascript scratchpad, run javascript online, browser javascript editor, js repl, javascript repl, code sandbox, online code editor, web code editor, codepen alternative, javascript web editor, js web editor, online js compiler, javascript runner, js runner, online javascript compiler, live javascript editor, javascript code pad, js notepad, code pen, js ide online, javascript ide online, instant javascript, no setup javascript, browser repl"
-    />
-    <meta name="author" content="Sourav" />
-    <meta name="robots" content="index, follow" />
-    <link rel="icon" href="https://sourav9063.github.io/favicon.ico" />
-    <link rel="canonical" href="https://sourav9063.github.io/jspad" />
 
-    <!-- Open Graph / Social -->
-    <meta property="og:type" content="website" />
-    <meta property="og:url" content="https://sourav9063.github.io/jspad" />
-    <meta property="og:title" content="JS Pad — Online JavaScript Editor, Playground & Code Sandbox" />
-    <meta property="og:description" content="Free online JavaScript editor powered by the VS Code editor engine. Write and run JS code instantly in your browser — no setup, no account required. A great CodePen alternative for JavaScript." />
-    <meta property="og:site_name" content="JS Pad" />
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>JS Pad — Online JavaScript Editor, Playground & Code Sandbox</title>
+  <meta name="description"
+    content="JS Pad is a free online JavaScript editor powered by the VS Code editor engine. Write, run, and debug JS code instantly in your browser — like CodePen but for JS. No setup, no account, no install required." />
+  <meta name="keywords"
+    content="js pad, jspad, javascript playground, online javascript editor, vscode editor online, vs code editor online, js scratchpad, javascript scratchpad, run javascript online, browser javascript editor, js repl, javascript repl, code sandbox, online code editor, web code editor, codepen alternative, javascript web editor, js web editor, online js compiler, javascript runner, js runner, online javascript compiler, live javascript editor, javascript code pad, js notepad, code pen, js ide online, javascript ide online, instant javascript, no setup javascript, browser repl" />
+  <meta name="author" content="Sourav" />
+  <meta name="robots" content="index, follow" />
+  <link rel="icon" href="https://sourav9063.github.io/favicon.ico" />
+  <link rel="canonical" href="https://sourav9063.github.io/jspad" />
 
-    <!-- Twitter -->
-    <meta name="twitter:card" content="summary" />
-    <meta name="twitter:title" content="JS Pad — Online JavaScript Editor, Playground & Code Sandbox" />
-    <meta name="twitter:description" content="Free online JavaScript editor powered by the VS Code editor engine. Write and run JS code instantly in your browser — no setup, no account required." />
+  <!-- Open Graph / Social -->
+  <meta property="og:type" content="website" />
+  <meta property="og:url" content="https://sourav9063.github.io/jspad" />
+  <meta property="og:title" content="JS Pad — Online JavaScript Editor, Playground & Code Sandbox" />
+  <meta property="og:description"
+    content="Free online JavaScript editor powered by the VS Code editor engine. Write and run JS code instantly in your browser — no setup, no account required. A great CodePen alternative for JavaScript." />
+  <meta property="og:site_name" content="JS Pad" />
 
-    <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Twitter -->
+  <meta name="twitter:card" content="summary" />
+  <meta name="twitter:title" content="JS Pad — Online JavaScript Editor, Playground & Code Sandbox" />
+  <meta name="twitter:description"
+    content="Free online JavaScript editor powered by the VS Code editor engine. Write and run JS code instantly in your browser — no setup, no account required." />
 
-    <!-- Structured Data -->
-    <script type="application/ld+json">
+  <script src="https://cdn.tailwindcss.com"></script>
+
+  <!-- Structured Data -->
+  <script type="application/ld+json">
       {
         "@context": "https://schema.org",
         "@type": "WebApplication",
         "name": "JS Pad",
-        "alternateName": ["JSPad", "JS Playground", "JavaScript Pad", "JavaScript Web Editor"],
+        "alternateName": [
+          "JSPad",
+          "JS Playground",
+          "JavaScript Pad",
+          "JavaScript Web Editor"
+        ],
         "url": "https://sourav9063.github.io/jspad",
         "description": "Free online JavaScript editor powered by the VS Code editor engine. Write, run, and debug JavaScript code instantly in your browser. No setup, no account, no install required.",
         "applicationCategory": "DeveloperApplication",
@@ -57,78 +61,87 @@
         "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD" }
       }
     </script>
-  </head>
-  <body class="flex h-screen bg-black overflow-hidden">
-    <div id="editor-panel" class="flex flex-col" style="width:60%">
-      <div class="flex items-center justify-between px-3 h-[30px] bg-black border-b border-zinc-800">
-        <span class="text-white font-mono font-semibold tracking-tight text-sm">JS<span class="text-sky-400">Pad</span></span>
-        <div class="flex items-center gap-3">
-          <a href="https://github.com/Sourav9063/jspad" target="_blank" rel="noopener noreferrer"
-            class="flex items-center gap-1 text-xs text-zinc-400 hover:text-white transition-colors font-mono">
-            <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="currentColor"><path d="M12 .297c-6.63 0-12 5.373-12 12 0 5.303 3.438 9.8 8.205 11.385.6.113.82-.258.82-.577 0-.285-.01-1.04-.015-2.04-3.338.724-4.042-1.61-4.042-1.61C4.422 18.07 3.633 17.7 3.633 17.7c-1.087-.744.084-.729.084-.729 1.205.084 1.838 1.236 1.838 1.236 1.07 1.835 2.809 1.305 3.495.998.108-.776.417-1.305.76-1.605-2.665-.3-5.466-1.332-5.466-5.93 0-1.31.465-2.38 1.235-3.22-.135-.303-.54-1.523.105-3.176 0 0 1.005-.322 3.3 1.23.96-.267 1.98-.399 3-.405 1.02.006 2.04.138 3 .405 2.28-1.552 3.285-1.23 3.285-1.23.645 1.653.24 2.873.12 3.176.765.84 1.23 1.91 1.23 3.22 0 4.61-2.805 5.625-5.475 5.92.42.36.81 1.096.81 2.22 0 1.606-.015 2.896-.015 3.286 0 .315.21.69.825.57C20.565 22.092 24 17.592 24 12.297c0-6.627-5.373-12-12-12"/></svg>
-            Star
-          </a>
-          <button id="copy-editor-btn" title="Copy code" class="text-zinc-400 hover:text-white cursor-pointer transition-colors">
-            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="8" height="4" x="8" y="2" rx="1" ry="1"></rect><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"></path></svg>
-          </button>
-        </div>
-      </div>
-      <div id="container" class="flex-1"></div>
-    </div>
+</head>
 
-    <div id="divider" class="w-1 h-full bg-zinc-800 hover:bg-sky-600 cursor-col-resize transition-colors flex-shrink-0"></div>
-
-    <div id="output-panel" class="flex flex-col overflow-hidden" style="flex:1">
-      <div
-        class="flex items-center gap-2 px-3 h-[30px] bg-black border-b border-zinc-800"
-      >
-        <button
-          id="format-btn"
-          class="px-2.5 py-0.5 text-xs font-mono bg-sky-700 hover:bg-sky-600 text-white rounded cursor-pointer"
-        >
-          Format
+<body class="flex h-screen bg-black overflow-hidden">
+  <div id="editor-panel" class="flex flex-col" style="width: 60%">
+    <div class="flex items-center justify-between px-3 h-[30px] bg-black border-b border-zinc-800">
+      <span class="text-white font-mono font-semibold tracking-tight text-sm">JS<span
+          class="text-sky-400">Pad</span></span>
+      <div class="flex items-center gap-3">
+        <a href="https://github.com/Sourav9063/jspad" target="_blank" rel="noopener noreferrer"
+          class="flex items-center gap-1 text-xs text-zinc-400 hover:text-white transition-colors font-mono">
+          <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="currentColor">
+            <path
+              d="M12 .297c-6.63 0-12 5.373-12 12 0 5.303 3.438 9.8 8.205 11.385.6.113.82-.258.82-.577 0-.285-.01-1.04-.015-2.04-3.338.724-4.042-1.61-4.042-1.61C4.422 18.07 3.633 17.7 3.633 17.7c-1.087-.744.084-.729.084-.729 1.205.084 1.838 1.236 1.838 1.236 1.07 1.835 2.809 1.305 3.495.998.108-.776.417-1.305.76-1.605-2.665-.3-5.466-1.332-5.466-5.93 0-1.31.465-2.38 1.235-3.22-.135-.303-.54-1.523.105-3.176 0 0 1.005-.322 3.3 1.23.96-.267 1.98-.399 3-.405 1.02.006 2.04.138 3 .405 2.28-1.552 3.285-1.23 3.285-1.23.645 1.653.24 2.873.12 3.176.765.84 1.23 1.91 1.23 3.22 0 4.61-2.805 5.625-5.475 5.92.42.36.81 1.096.81 2.22 0 1.606-.015 2.896-.015 3.286 0 .315.21.69.825.57C20.565 22.092 24 17.592 24 12.297c0-6.627-5.373-12-12-12" />
+          </svg>
+          Star
+        </a>
+        <button id="copy-editor-btn" title="Copy code"
+          class="text-zinc-400 hover:text-white cursor-pointer transition-colors">
+          <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none"
+            stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <rect width="8" height="4" x="8" y="2" rx="1" ry="1"></rect>
+            <path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"></path>
+          </svg>
         </button>
-        <span class="text-xs text-zinc-500 font-mono">Shift+Alt+F</span>
-        <div class="ml-auto">
-          <button id="copy-output-btn" title="Copy output" class="text-zinc-400 hover:text-white cursor-pointer transition-colors">
-            <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="8" height="4" x="8" y="2" rx="1" ry="1"></rect><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"></path></svg>
-          </button>
-        </div>
-      </div>
-      <div
-        id="output"
-        class="flex-1 font-mono text-sm p-5 overflow-auto whitespace-pre-wrap text-sky-300"
-      >
-        Output will appear here...
       </div>
     </div>
+    <div id="container" class="flex-1"></div>
+  </div>
 
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.44.0/min/vs/loader.min.js"></script>
-    <script>
-      require.config({
-        paths: {
-          vs: "https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.44.0/min/vs",
+  <div id="divider" class="w-1 h-full bg-zinc-800 hover:bg-sky-600 cursor-col-resize transition-colors flex-shrink-0">
+  </div>
+
+  <div id="output-panel" class="flex flex-col overflow-hidden" style="flex: 1">
+    <div class="flex items-center gap-2 px-3 h-[30px] bg-black border-b border-zinc-800">
+      <button id="format-btn"
+        class="px-2.5 py-0.5 text-xs font-mono bg-sky-700 hover:bg-sky-600 text-white rounded cursor-pointer">
+        Format
+      </button>
+      <span class="text-xs text-zinc-500 font-mono">Shift+Alt+F</span>
+      <div class="ml-auto">
+        <button id="copy-output-btn" title="Copy output"
+          class="text-zinc-400 hover:text-white cursor-pointer transition-colors">
+          <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none"
+            stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <rect width="8" height="4" x="8" y="2" rx="1" ry="1"></rect>
+            <path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"></path>
+          </svg>
+        </button>
+      </div>
+    </div>
+    <div id="output" class="flex-1 font-mono text-sm p-5 overflow-auto whitespace-pre-wrap text-sky-300">
+      Output will appear here...
+    </div>
+  </div>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.44.0/min/vs/loader.min.js"></script>
+  <script>
+    require.config({
+      paths: {
+        vs: "https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.44.0/min/vs",
+      },
+    });
+
+    require([ "vs/editor/editor.main" ], function () {
+      monaco.editor.defineTheme("pitch-black", {
+        base: "vs-dark",
+        inherit: true,
+        rules: [],
+        colors: {
+          "editor.background": "#000000",
+          "editor.lineHighlightBackground": "#111111",
+          "editorLineNumber.foreground": "#444444",
+          "editorGutter.background": "#000000",
+          "minimap.background": "#000000",
         },
       });
 
-      require(["vs/editor/editor.main"], function () {
-        monaco.editor.defineTheme("pitch-black", {
-          base: "vs-dark",
-          inherit: true,
-          rules: [],
-          colors: {
-            "editor.background": "#000000",
-            "editor.lineHighlightBackground": "#111111",
-            "editorLineNumber.foreground": "#444444",
-            "editorGutter.background": "#000000",
-            "minimap.background": "#000000",
-          },
-        });
-
-        const editor = monaco.editor.create(
-          document.getElementById("container"),
-          {
-            value: `// === Primitives ===
+      const editor = monaco.editor.create(
+        document.getElementById("container"),
+        {
+          value: `// === Primitives ===
 console.log("string");
 console.log(42);
 console.log(3.14);
@@ -183,120 +196,132 @@ setTimeout(() => console.error("setTimeout error after 1.5s"), 1500);
 // === Thrown error (caught by editor) ===
 // Uncomment to test runtime error display:
 // throw new Error("uncaught runtime error");`,
-            language: "javascript",
-            theme: "pitch-black",
-            automaticLayout: true,
-            fontSize: 16,
-            formatOnPaste: true,
-            minimap: {
-              renderCharacters: false,
-              maxColumn: 24,
-              size: "fit",
-            },
+          language: "javascript",
+          theme: "pitch-black",
+          automaticLayout: true,
+          fontSize: 16,
+          formatOnPaste: true,
+          minimap: {
+            renderCharacters: false,
+            maxColumn: 24,
+            size: "fit",
           },
-        );
+        },
+      );
 
-        const outputDiv = document.getElementById("output");
+      const outputDiv = document.getElementById("output");
 
-        document.getElementById("format-btn").addEventListener("click", () => {
-          editor.getAction("editor.action.formatDocument").run();
+      document.getElementById("format-btn").addEventListener("click", () => {
+        editor.getAction("editor.action.formatDocument").run();
+      });
+
+      function flashCopied(btn) {
+        const orig = btn.innerHTML;
+        btn.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>`;
+        btn.classList.add("text-green-400");
+        setTimeout(() => {
+          btn.innerHTML = orig;
+          btn.classList.remove("text-green-400");
+        }, 1500);
+      }
+
+      document
+        .getElementById("copy-editor-btn")
+        .addEventListener("click", () => {
+          navigator.clipboard
+            .writeText(editor.getValue())
+            .then(() =>
+              flashCopied(document.getElementById("copy-editor-btn")),
+            );
         });
 
-        function flashCopied(btn) {
-          const orig = btn.innerHTML;
-          btn.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>`;
-          btn.classList.add("text-green-400");
-          setTimeout(() => { btn.innerHTML = orig; btn.classList.remove("text-green-400"); }, 1500);
+      document
+        .getElementById("copy-output-btn")
+        .addEventListener("click", () => {
+          navigator.clipboard
+            .writeText(outputDiv.innerText)
+            .then(() =>
+              flashCopied(document.getElementById("copy-output-btn")),
+            );
+        });
+
+      function runCode(code) {
+        outputDiv.innerHTML = "";
+
+        function appendLine(text, colorClass) {
+          if (outputDiv.firstChild) {
+            const hr = document.createElement("hr");
+            hr.className = "border-zinc-800 my-1";
+            outputDiv.appendChild(hr);
+          }
+          const span = document.createElement("span");
+          span.className = colorClass;
+          span.textContent = text;
+          outputDiv.appendChild(span);
         }
 
-        document.getElementById("copy-editor-btn").addEventListener("click", () => {
-          navigator.clipboard.writeText(editor.getValue()).then(() =>
-            flashCopied(document.getElementById("copy-editor-btn"))
-          );
-        });
-
-        document.getElementById("copy-output-btn").addEventListener("click", () => {
-          navigator.clipboard.writeText(outputDiv.innerText).then(() =>
-            flashCopied(document.getElementById("copy-output-btn"))
-          );
-        });
-
-        function runCode(code) {
-          outputDiv.innerHTML = "";
-
-          function appendLine(text, colorClass) {
-            if (outputDiv.firstChild) {
-              const hr = document.createElement("hr");
-              hr.className = "border-zinc-800 my-1";
-              outputDiv.appendChild(hr);
-            }
-            const span = document.createElement("span");
-            span.className = colorClass;
-            span.textContent = text;
-            outputDiv.appendChild(span);
-          }
-
-          function stringify(a) {
-            if (a instanceof Error) return a.message;
-            if (typeof a === "object" && a !== null)
-              return JSON.stringify(a, null, 2);
-            return String(a);
-          }
-
-          const customConsole = {
-            log: (...args) =>
-              appendLine(args.map(stringify).join(" "), "text-sky-300"),
-            error: (...args) =>
-              appendLine(
-                "[error] " + args.map(stringify).join(" "),
-                "text-red-400",
-              ),
-            warn: (...args) =>
-              appendLine(
-                "[warn] " + args.map(stringify).join(" "),
-                "text-yellow-400",
-              ),
-          };
-
-          try {
-            new Function("console", code)(customConsole);
-          } catch (err) {
-            appendLine(err.message, "text-red-400");
-          }
+        function stringify(a) {
+          if (a instanceof Error) return a.message;
+          if (typeof a === "object" && a !== null)
+            return JSON.stringify(a, null, 2);
+          return String(a);
         }
 
-        editor.onDidChangeModelContent(() => {
-          runCode(editor.getValue());
-        });
+        const customConsole = {
+          log: (...args) =>
+            appendLine(args.map(stringify).join(" "), "text-sky-300"),
+          error: (...args) =>
+            appendLine(
+              "[error] " + args.map(stringify).join(" "),
+              "text-red-400",
+            ),
+          warn: (...args) =>
+            appendLine(
+              "[warn] " + args.map(stringify).join(" "),
+              "text-yellow-400",
+            ),
+        };
 
+        try {
+          new Function("console", code)(customConsole);
+        } catch (err) {
+          appendLine(err.message, "text-red-400");
+        }
+      }
+
+      editor.onDidChangeModelContent(() => {
         runCode(editor.getValue());
       });
 
-      // Divider drag to resize
-      const divider = document.getElementById("divider");
-      const editorPanel = document.getElementById("editor-panel");
+      runCode(editor.getValue());
+    });
 
-      divider.addEventListener("mousedown", (e) => {
-        e.preventDefault();
-        document.body.style.cursor = "col-resize";
-        document.body.style.userSelect = "none";
+    // Divider drag to resize
+    const divider = document.getElementById("divider");
+    const editorPanel = document.getElementById("editor-panel");
 
-        function onMouseMove(e) {
-          const totalWidth = document.body.clientWidth;
-          const newWidth = Math.min(Math.max(e.clientX, 150), totalWidth - 150);
-          editorPanel.style.width = newWidth + "px";
-        }
+    divider.addEventListener("mousedown", (e) => {
+      e.preventDefault();
+      document.body.style.cursor = "col-resize";
+      document.body.style.userSelect = "none";
 
-        function onMouseUp() {
-          document.body.style.cursor = "";
-          document.body.style.userSelect = "";
-          document.removeEventListener("mousemove", onMouseMove);
-          document.removeEventListener("mouseup", onMouseUp);
-        }
+      function onMouseMove(e) {
+        const totalWidth = document.body.clientWidth;
+        const newWidth = Math.min(Math.max(e.clientX, 150), totalWidth - 150);
+        editorPanel.style.width = newWidth + "px";
+      }
 
-        document.addEventListener("mousemove", onMouseMove);
-        document.addEventListener("mouseup", onMouseUp);
-      });
-    </script>
-  </body>
+      function onMouseUp() {
+        document.body.style.cursor = "";
+        document.body.style.userSelect = "";
+        document.removeEventListener("mousemove", onMouseMove);
+        document.removeEventListener("mouseup", onMouseUp);
+      }
+
+      document.addEventListener("mousemove", onMouseMove);
+      document.addEventListener("mouseup", onMouseUp);
+    });
+  </script>
+</body>
+
 </html>
