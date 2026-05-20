@@ -27,6 +27,10 @@ JS Pad is the first Vim-enabled JavaScript and TypeScript playground on the web.
 - CodePen alternative for pure JavaScript and TypeScript experiments
 - Instant JS/TS REPL in your browser
 
+<img width="1470" height="837" alt="Screenshot 2026-05-20 at 4 18 41 PM" src="https://github.com/user-attachments/assets/21609de4-58af-45dc-83c3-b77ee237f1ad" />
+
+<img width="1470" height="837" alt="Screenshot 2026-05-20 at 4 18 41 PM" src="https://github.com/user-attachments/assets/9be7e09d-1a36-4df7-9856-a8c4ca1f75a6" />
+
 ## Keywords
 
 vim javascript playground, vim typescript playground, vim online editor, vim js editor, vim ts editor, vim mode browser, vim keybindings online, js pad, jspad, javascript playground, typescript playground, online javascript editor, online typescript editor, typescript browser repl, vscode editor online, vs code editor online, js web editor, javascript web editor, typescript web editor, js scratchpad, typescript scratchpad, run javascript online, run typescript online, browser javascript editor, js repl, typescript repl, javascript repl, code sandbox, online code editor, codepen alternative, online js compiler, online ts compiler, javascript runner, typescript runner, js ide online, typescript ide online
