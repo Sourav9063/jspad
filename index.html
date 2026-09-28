@@ -102,14 +102,20 @@
           Format
         </button>
         <span class="text-xs text-zinc-500 font-mono">Shift+Alt+F</span>
-        <button id="ts-toggle-btn" title="Toggle TypeScript mode"
-          class="px-1.5 py-0.5 text-xs font-mono rounded cursor-pointer transition-colors text-zinc-500 hover:text-white border border-zinc-700 hover:border-zinc-500">
-          TS
-        </button>
-        <button id="md-toggle-btn" title="Toggle Markdown mode"
-          class="px-1.5 py-0.5 text-xs font-mono rounded cursor-pointer transition-colors text-zinc-500 hover:text-white border border-zinc-700 hover:border-zinc-500">
-          MD
-        </button>
+        <div role="group" aria-label="Language" class="flex items-center gap-1">
+          <button id="js-mode-btn" title="JavaScript mode"
+            class="px-1.5 py-0.5 text-xs font-mono rounded cursor-pointer transition-colors text-zinc-500 hover:text-white border border-zinc-700 hover:border-zinc-500">
+            JS
+          </button>
+          <button id="ts-mode-btn" title="TypeScript mode"
+            class="px-1.5 py-0.5 text-xs font-mono rounded cursor-pointer transition-colors text-zinc-500 hover:text-white border border-zinc-700 hover:border-zinc-500">
+            TS
+          </button>
+          <button id="md-mode-btn" title="Markdown mode"
+            class="px-1.5 py-0.5 text-xs font-mono rounded cursor-pointer transition-colors text-zinc-500 hover:text-white border border-zinc-700 hover:border-zinc-500">
+            MD
+          </button>
+        </div>
         <button id="vim-toggle-btn" title="Toggle Vim mode"
           class="px-1.5 py-0.5 text-xs font-mono rounded cursor-pointer transition-colors text-zinc-500 hover:text-white border border-zinc-700 hover:border-zinc-500">
           VIM
@@ -626,6 +632,7 @@ console.log("Markdown code blocks are shown, never run");
         button.classList.toggle("border-zinc-700", !isActive);
         button.classList.toggle("text-sky-400", isActive);
         button.classList.toggle("border-sky-600", isActive);
+        button.setAttribute("aria-pressed", String(isActive));
       }
 
       function showNotice(message) {
@@ -660,9 +667,10 @@ console.log("Markdown code blocks are shown, never run");
 
       vimBtn.addEventListener("click", () => setVimActive(!vimMode));
 
-      const modeToggleButtons = {
-        ts: document.getElementById("ts-toggle-btn"),
-        md: document.getElementById("md-toggle-btn"),
+      const modeButtons = {
+        js: document.getElementById("js-mode-btn"),
+        ts: document.getElementById("ts-mode-btn"),
+        md: document.getElementById("md-mode-btn"),
       };
 
       let typeScriptPromise = null;
@@ -725,7 +733,7 @@ console.log("Markdown code blocks are shown, never run");
       async function loadModeDependencies(targetMode) {
         const load = modeDependencyLoaders[ targetMode ];
         if (!load) return;
-        const button = modeToggleButtons[ targetMode ];
+        const button = modeButtons[ targetMode ];
         button.textContent = "...";
         try {
           await load();
@@ -756,8 +764,7 @@ console.log("Markdown code blocks are shown, never run");
       }
 
       function updateModeUi() {
-        setToggleActive(modeToggleButtons.ts, mode === "ts");
-        setToggleActive(modeToggleButtons.md, mode === "md");
+        for (const [ buttonMode, button ] of Object.entries(modeButtons)) setToggleActive(button, buttonMode === mode);
         outputDiv.classList.toggle("hidden", mode === "md");
         previewDiv.classList.toggle("hidden", mode !== "md");
         formatBtn.disabled = mode === "md";
@@ -765,8 +772,9 @@ console.log("Markdown code blocks are shown, never run");
 
       // Resolves true once the editor is in nextMode, or false if a newer switch superseded this one.
       async function switchMode(nextMode, { keepText = false, sourceSnapshot } = {}) {
-        if (nextMode === mode) return true;
+        // Counted even when already in nextMode, so picking the current mode cancels a slower pending switch.
         const switchId = ++latestModeSwitchId;
+        if (nextMode === mode) return true;
         await loadModeDependencies(nextMode);
         if (switchId !== latestModeSwitchId) return false;
 
@@ -783,8 +791,8 @@ console.log("Markdown code blocks are shown, never run");
         return true;
       }
 
-      async function toggleMode(targetMode) {
-        const nextMode = mode === targetMode ? "js" : targetMode;
+      async function selectMode(nextMode) {
+        const previousMode = mode;
         let didSwitch;
         try {
           didSwitch = await switchMode(nextMode);
@@ -793,11 +801,12 @@ console.log("Markdown code blocks are shown, never run");
           return;
         }
         // The switch replaced the editor with this mode's saved code, so the unrun shared code is gone.
-        if (didSwitch && isPaused) setPaused(false);
+        if (didSwitch && mode !== previousMode && isPaused) setPaused(false);
       }
 
-      modeToggleButtons.ts.addEventListener("click", () => toggleMode("ts"));
-      modeToggleButtons.md.addEventListener("click", () => toggleMode("md"));
+      for (const [ buttonMode, button ] of Object.entries(modeButtons)) {
+        button.addEventListener("click", () => selectMode(buttonMode));
+      }
 
       function setPaused(paused) {
         isPaused = paused;

@@ -90,7 +90,7 @@ async (page, t) => {
     page.off("dialog", onDialog);
   }
 
-  await page.click("#md-toggle-btn");
+  await page.click("#js-mode-btn");
   await t.waitForLanguage("javascript");
   t.expect("leaving MD mode", await page.evaluate(() => ({
     formatDisabled: document.getElementById("format-btn").disabled,

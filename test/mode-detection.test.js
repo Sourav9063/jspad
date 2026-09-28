@@ -48,23 +48,23 @@ async (page, t) => {
   await page.waitForTimeout(PAST_IDLE_DETECTION_MS);
   t.expect("JS holding Markdown in a string gets no suggestion", await t.suggestion(), null);
 
-  await page.click("#ts-toggle-btn");
+  await page.click("#ts-mode-btn");
   await t.waitForLanguage("typescript");
   const tsCode = "interface Row { id: number; name: string }\n// # heading-like comment\n// - list-like comment\nconst rows: Row[] = [{ id: 1, name: 'a' }];\nfunction pick<T>(xs: T[]): T | undefined { return xs[0]; }\nconsole.log(pick(rows));\n".repeat(4);
   await t.paste(tsCode);
   await page.waitForTimeout(PAST_IDLE_DETECTION_MS);
   t.expect("TS with type annotations gets no suggestion", await t.suggestion(), null);
-  await page.click("#ts-toggle-btn");
+  await page.click("#js-mode-btn");
   await t.waitForLanguage("javascript");
 
-  await page.click("#md-toggle-btn");
+  await page.click("#md-mode-btn");
   await t.waitForLanguage("markdown");
   await t.paste(markdown);
   await page.waitForTimeout(PASTE_SETTLE_MS);
   t.expect("Markdown pasted in MD mode stays exact", await t.editorValue(), markdown);
   t.expect("Markdown pasted in MD mode gets no suggestion", await t.suggestion(), null);
 
-  await page.click("#md-toggle-btn");
+  await page.click("#js-mode-btn");
   await t.waitForLanguage("javascript");
   await t.paste(markdown);
   await page.waitForTimeout(PASTE_SETTLE_MS);

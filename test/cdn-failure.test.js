@@ -16,7 +16,7 @@ async (page, t) => {
     await t.until(() => document.getElementById("share-btn").textContent.trim() === "Share");
     await page.click("#notice-dismiss-btn");
 
-    for (const [ button, language ] of [ [ "#ts-toggle-btn", "typescript" ], [ "#md-toggle-btn", "markdown" ] ]) {
+    for (const [ button, language ] of [ [ "#ts-mode-btn", "typescript" ], [ "#md-mode-btn", "markdown" ] ]) {
       await page.click(button);
       await t.waitForNotice();
       t.expect(`${language} failure stays in JS`, await t.language(), "javascript");
@@ -26,7 +26,7 @@ async (page, t) => {
     await page.unrouteAll({ behavior: "ignoreErrors" });
   }
 
-  await page.click("#md-toggle-btn");
+  await page.click("#md-mode-btn");
   await t.waitForLanguage("markdown");
   await t.until(() => !document.getElementById("preview").classList.contains("hidden"));
 }

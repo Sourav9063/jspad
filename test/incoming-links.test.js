@@ -65,12 +65,15 @@ async (page, t) => {
   await t.waitForBanner();
   t.expect("a link opened in the same tab is paused", await page.evaluate(() => window.__hashchangeRuns ?? 0), 0);
 
-  await page.click("#ts-toggle-btn");
+  await page.click("#js-mode-btn");
+  t.expect("picking the current mode while paused stays paused", await t.bannerShown(), true);
+
+  await page.click("#ts-mode-btn");
   await t.waitForLanguage("typescript");
   await page.waitForTimeout(SETTLE_MS);
   t.expect("switching mode while paused unpauses", await t.bannerShown(), false);
   t.expect("switching mode while paused runs nothing", await page.evaluate(() => window.__hashchangeRuns ?? 0), 0);
-  await page.click("#ts-toggle-btn");
+  await page.click("#js-mode-btn");
   await t.waitForLanguage("javascript");
 
   const tsCode = "const n: number = 42;\nconsole.log('ts-link', n);";
