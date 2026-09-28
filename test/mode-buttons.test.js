@@ -8,6 +8,11 @@ async (page, t) => {
   t.expect("JS is pressed on load", await pressed(), [ "js" ]);
 
   await page.click("#ts-mode-btn");
+  await page.click("#js-mode-btn");
+  await t.until(() => window.ts && document.getElementById("ts-mode-btn").textContent.trim() === "TS");
+  t.expect("picking JS while TS loads cancels the switch", [ await t.language(), await pressed() ], [ "javascript", [ "js" ] ]);
+
+  await page.click("#ts-mode-btn");
   await t.waitForLanguage("typescript");
   t.expect("TS is pressed", await pressed(), [ "ts" ]);
   t.expect("TS shows its saved code", await t.editorValue(), "const n: number = 1;");

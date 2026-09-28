@@ -5,8 +5,10 @@ Owner: `index.html` (main script).
 ## Mode model
 
 - One `mode` value (`js` / `ts` / `md`) replaces the old TS boolean. Each mode has its own
-  localStorage key, so switching swaps in that mode's saved code. The TS and MD buttons are two
-  toggles over the one mode; clicking the active one returns to JS.
+  localStorage key, so switching swaps in that mode's saved code. The JS, TS and MD buttons each select
+  their mode (one is always pressed). They replaced TS and MD toggles that returned to JS when
+  clicked again, which was confusing (user decision). Picking the current mode cancels a slower
+  pending switch and never unpauses shared code.
 - The legacy TS flag key is still read once to migrate users who had TS mode on.
 - Mode dependencies (TypeScript compiler, Markdown renderer) load on first use through shared
   in-flight promises; a failure shows a notice and resets so the next click retries.

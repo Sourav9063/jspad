@@ -7,7 +7,7 @@ JS Pad is the first Vim-enabled JavaScript and TypeScript playground on the web.
 ## Features
 
 - **Vim mode** with full keybindings and relative line numbers, the first of its kind in a browser JS playground
-- **TypeScript support** toggle TS mode on demand — compiler loads lazily, types and IntelliSense work instantly
+- **TypeScript support** pick TS from the JS / TS / MD buttons — compiler loads lazily, types and IntelliSense work instantly
 - **VS Code editor** with syntax highlighting, autocomplete, and minimap
 - **Live output panel** results appear as you type, no run button needed
 - **console.log / warn / error** captured and color-coded in the output panel
@@ -15,7 +15,7 @@ JS Pad is the first Vim-enabled JavaScript and TypeScript playground on the web.
 - **Responsive layout** horizontal split on mobile, vertical on desktop
 - **Resizable panels** drag the divider (with visible handle on mobile) to adjust editor/output split
 - **Copy buttons** copy editor code or output to clipboard with one click
-- **Markdown mode** toggle MD to write Markdown on the left and see a sanitized, GitHub-style preview on the right, with syntax-highlighted code blocks and a copy button on each; JS Pad suggests switching when pasted text looks like Markdown (or like JavaScript while in MD mode)
+- **Markdown mode** pick MD to write Markdown on the left and see a sanitized, GitHub-style preview on the right, with syntax-highlighted code blocks and a copy button on each; JS Pad suggests switching when pasted text looks like Markdown (or like JavaScript while in MD mode)
 - **Share links** the Share button copies a link holding your code and mode, Brotli-compressed into the URL hash, and puts it in the address bar; nothing is uploaded. Editing never changes the URL; click Share again to update it
 - **Auto-save** code and mode preferences persisted to localStorage across sessions
 - **Pitch-black dark theme** easy on the eyes
