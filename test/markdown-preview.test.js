@@ -20,7 +20,9 @@ async (page, t) => {
   t.expect("preview UI", await page.evaluate(() => ({
     formatDisabled: document.getElementById("format-btn").disabled,
     outputHidden: document.getElementById("output").classList.contains("hidden"),
-  })), { formatDisabled: true, outputHidden: true });
+    // Loading straight into MD must not leave the startup JS check's diagnostics on the Markdown.
+    markers: monaco.editor.getModelMarkers({}).length,
+  })), { formatDisabled: true, outputHidden: true, markers: 0 });
   t.expect("GitHub styling", await page.evaluate(() => {
     const preview = document.getElementById("preview");
     return {

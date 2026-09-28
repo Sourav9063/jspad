@@ -769,6 +769,17 @@ Paste emoji directly: ⛺ 😂 🚀
         },
       );
 
+      // Monaco's JS/TS worker can report diagnostics after the model has switched language (a check still
+      // running when the page reloads straight into MD or TS), which would leave stale squiggles behind.
+      const WORKER_MARKER_OWNERS = [ "javascript", "typescript" ];
+      monaco.editor.onDidChangeMarkers(() => {
+        const model = editor.getModel();
+        for (const owner of WORKER_MARKER_OWNERS) {
+          if (owner === model.getLanguageId()) continue;
+          if (monaco.editor.getModelMarkers({ owner, resource: model.uri }).length) monaco.editor.setModelMarkers(model, owner, []);
+        }
+      });
+
       const outputDiv = document.getElementById("output");
       const previewDiv = document.getElementById("preview");
       const formatBtn = document.getElementById("format-btn");

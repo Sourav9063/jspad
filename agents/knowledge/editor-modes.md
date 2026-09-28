@@ -13,6 +13,9 @@ Owner: `index.html` (main script).
 - Mode dependencies (TypeScript compiler, Markdown renderer) load on first use through shared
   in-flight promises; a failure shows a notice and resets so the next click retries.
 - A newer mode switch supersedes an older one still waiting on its dependency load.
+- The editor always starts in JS and switches to the stored mode. Monaco's JS/TS worker can report
+  diagnostics after that switch, so markers from a JS/TS owner that isn't the model's current language
+  are cleared whenever markers change.
 
 ## Markdown rendering and sanitization
 
