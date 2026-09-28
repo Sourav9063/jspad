@@ -39,6 +39,12 @@ test/run.sh test/share-button.test.js
 
 The runner serves the repo on `127.0.0.1:5601` (override with `JSPAD_TEST_PORT`), needs `python3` and `node`, and needs network access to the CDNs the page loads.
 
+To test a deployed copy instead, set `JSPAD_TEST_URL`:
+
+```sh
+JSPAD_TEST_URL=https://sourav9063.github.io/jspad/ test/run.sh
+```
+
 ## Use cases
 
 - Quick JS/TS scratchpad for testing ideas with Vim keybindings

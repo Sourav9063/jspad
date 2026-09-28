@@ -7,6 +7,8 @@
 # Needs playwright-cli, python3 and node on PATH, plus network access to the CDNs the page loads.
 # JSPAD_TEST_PORT (default 5601) and JSPAD_TEST_SESSION (default jspad-test) override the defaults;
 # pointing JSPAD_TEST_SESSION at an already-open session reuses it and leaves it open.
+# JSPAD_TEST_URL runs the tests against a deployed copy instead of starting the local server, e.g.
+#   JSPAD_TEST_URL=https://sourav9063.github.io/jspad/ test/run.sh
 set -uo pipefail
 
 root="$(cd "$(dirname "$0")/.." && pwd)"
@@ -14,7 +16,7 @@ root="$(cd "$(dirname "$0")/.." && pwd)"
 cd "$root" || exit 1
 port="${JSPAD_TEST_PORT:-5601}"
 session="${JSPAD_TEST_SESSION:-jspad-test}"
-base_url="http://127.0.0.1:${port}/index.html"
+base_url="${JSPAD_TEST_URL:-http://127.0.0.1:${port}/index.html}"
 work_dir="$(mktemp -d)"
 server_pid=""
 opened_session=false
@@ -26,18 +28,21 @@ cleanup() {
 }
 trap cleanup EXIT
 
-# A plain static server: live-reload servers reload the page when playwright-cli writes its logs.
-python3 -m http.server "$port" --bind 127.0.0.1 --directory "$root" >"$work_dir/server.log" 2>&1 &
-server_pid=$!
-for _ in {1..50}; do
-  curl -sf -o /dev/null "$base_url" && break
-  sleep 0.1
-done
-if ! curl -sf -o /dev/null "$base_url"; then
-  echo "Couldn't start the test server on port $port:" >&2
-  cat "$work_dir/server.log" >&2
-  exit 1
-fi
+start_server() {
+  # A plain static server: live-reload servers reload the page when playwright-cli writes its logs.
+  python3 -m http.server "$port" --bind 127.0.0.1 --directory "$root" >"$work_dir/server.log" 2>&1 &
+  server_pid=$!
+  for _ in {1..50}; do
+    curl -sf -o /dev/null "$base_url" && break
+    sleep 0.1
+  done
+  if ! curl -sf -o /dev/null "$base_url"; then
+    echo "Couldn't start the test server on port $port:" >&2
+    cat "$work_dir/server.log" >&2
+    exit 1
+  fi
+}
+if [[ -z "${JSPAD_TEST_URL:-}" ]]; then start_server; fi
 
 if ! playwright-cli -s="$session" --raw eval "1" >/dev/null 2>&1; then
   playwright-cli -s="$session" open >/dev/null || { echo "Couldn't open a playwright-cli session" >&2; exit 1; }
