@@ -549,31 +549,195 @@ Promise.reject(new Error("async failure")).catch((err) =>
 
       const defaultMdCode = `# Markdown preview
 
-Write **Markdown** on the left and see it rendered here.
+Write **Markdown** on the left and see it rendered here, GitHub style. This sample shows every supported feature.
+
+## Headings
+
+### Heading 3
+#### Heading 4
+##### Heading 5
+###### Heading 6
+
+Underlined heading
+==================
+
+Underlined subheading
+---------------------
+
+### Headings can hold \`code\` and *emphasis*
+
+## Emphasis
+
+**Bold**, __also bold__, *italic*, _also italic_, ***bold italic***, ~~strikethrough~~, ~single tildes~ and \`inline code\`.
+
+HTML fills the gaps: <mark>highlight</mark>, H<sub>2</sub>O, X<sup>2</sup>, <kbd>Ctrl</kbd> + <kbd>S</kbd>, <ins>inserted</ins>, <u>underlined</u>, <small>small</small> and <abbr title="HyperText Markup Language">HTML</abbr> (hover it).
+
+Entities work too: &copy; &trade; &rarr; &#x1F600;
+
+End a line with a backslash\\
+to break it without starting a new paragraph.
+
+## Blockquotes
+
+> Blockquotes can hold **other elements**.
+>
+> > And they nest.
+>
+> - Even lists
+>
+> \`\`\`js
+> console.log("and code");
+> \`\`\`
 
 ## Lists
 
-- Item one
-- Item two
+- Unordered item
+* Asterisks work
++ So do pluses
   - Nested item
+    - Deeper still
 
-1. First
-2. Second
+1. Ordered item
+2. Another item
+   1. Nested ordered item
+3. Last item, with more inside:
+
+   A second paragraph.
+
+   \`\`\`sh
+   echo "and a code block"
+   \`\`\`
+
+Numbering can start anywhere:
+
+5) Fifth
+6) Sixth, parentheses work too
+
+- [x] Write the press release
+- [ ] Update the website
+- [ ] Contact the media
 
 ## Code
 
+Fenced blocks are highlighted by language and get a copy button. They're shown, never run.
+
 \`\`\`js
-console.log("Markdown code blocks are shown, never run");
+const user = { name: "Alice", age: 30 };
+console.log(\`Hello, \${user.name}\`);
 \`\`\`
 
-> Blockquotes work too.
+\`\`\`ts
+function first<T>(items: T[]): T | undefined {
+  return items[0];
+}
+\`\`\`
 
-| Mode | Output  |
-| ---- | ------- |
-| JS   | Console |
-| MD   | Preview |
+\`\`\`json
+{
+  "firstName": "John",
+  "lastName": "Smith",
+  "age": 25
+}
+\`\`\`
 
-[Links](https://github.com/Sourav9063/jspad) open in a new tab.`;
+\`\`\`python
+def greet(name):
+    return f"Hello, {name}"
+\`\`\`
+
+\`\`\`html
+<button class="primary">Save</button>
+\`\`\`
+
+\`\`\`css
+.primary { color: white; background: #238636; }
+\`\`\`
+
+\`\`\`sql
+SELECT name, age FROM users WHERE age > 21;
+\`\`\`
+
+\`\`\`yaml
+name: jspad
+modes: [js, ts, md]
+\`\`\`
+
+~~~bash
+echo "Tildes fence code too"
+~~~
+
+    Indenting four spaces
+    makes a code block as well.
+
+Double backticks show \`\`a \`backtick\` inside\`\` inline code.
+
+## Tables
+
+| Left aligned | Centered  | Right aligned |
+| :----------- | :-------: | ------------: |
+| Header       | Title     | Here's this   |
+| Paragraph    | Text      | And more      |
+| **Bold**     | \`code\`    | [Link](https://www.markdownguide.org/extended-syntax/#tables) |
+| Pipe: &#124; | *italic*  | ~~struck~~    |
+| Escaped \\| pipe |        | Empty cell    |
+
+## Links
+
+- [Inline link](https://github.com/Sourav9063/jspad "jspad on GitHub")
+- [Reference link][guide]
+- Autolinked URL: https://www.markdownguide.org
+- Autolinked www: www.commonmark.org
+- Angle brackets: <https://spec.commonmark.org>
+- Email: <hello@example.com>
+- Not linked: \`https://www.example.com\`
+
+[guide]: https://www.markdownguide.org/cheat-sheet/
+
+## Images
+
+![A small badge](data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20width='160'%20height='40'%3E%3Crect%20width='160'%20height='40'%20rx='6'%20fill='%23238636'/%3E%3Ctext%20x='80'%20y='26'%20font-family='sans-serif'%20font-size='16'%20fill='white'%20text-anchor='middle'%3EMarkdown%3C/text%3E%3C/svg%3E "Images take alt text and a title")
+
+Reference-style: ![Reference image][badge]
+
+Linked image: [![Linked image][badge]](https://www.markdownguide.org/basic-syntax/#images-1)
+
+<p align="center"><img src="data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20width='160'%20height='40'%3E%3Crect%20width='160'%20height='40'%20rx='6'%20fill='%23238636'/%3E%3Ctext%20x='80'%20y='26'%20font-family='sans-serif'%20font-size='16'%20fill='white'%20text-anchor='middle'%3EMarkdown%3C/text%3E%3C/svg%3E" width="80" alt="Resized and centered with HTML"></p>
+
+[badge]: data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20width='160'%20height='40'%3E%3Crect%20width='160'%20height='40'%20rx='6'%20fill='%23238636'/%3E%3Ctext%20x='80'%20y='26'%20font-family='sans-serif'%20font-size='16'%20fill='white'%20text-anchor='middle'%3EMarkdown%3C/text%3E%3C/svg%3E
+
+## Horizontal rules
+
+Three hyphens, asterisks or underscores:
+
+---
+
+***
+
+___
+
+## HTML
+
+<details>
+<summary>Click to expand</summary>
+
+Hidden content, with **Markdown** inside.
+
+</details>
+
+<!-- HTML comments are hidden in the preview -->
+
+<div align="center">Centered with <code>align</code></div>
+
+<dl>
+  <dt>Definition term</dt>
+  <dd>Its definition.</dd>
+</dl>
+
+## Emoji and escaping
+
+Paste emoji directly: ⛺ 😂 🚀
+
+\\*Backslashes\\* show \\# literal \\[characters\\] like \\\`these\\\`.`;
 
       const DEFAULT_CODE = { js: defaultCode, ts: defaultTsCode, md: defaultMdCode };
 
