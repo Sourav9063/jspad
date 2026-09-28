@@ -18,8 +18,19 @@ Owner: `index.html` (main script).
   inputs, buttons, `style`, `iframe` and inline `style` attributes are forbidden on top of the
   DOMPurify HTML profile, so shared Markdown can't overlay or restyle the page or phish with forms.
   Links are forced to `target=_blank rel="noopener noreferrer"`.
-- Rejected: rendering into a sandboxed iframe. Stronger isolation, but Tailwind Typography would
-  have to be injected into it, and the forbid list already covers the threats.
+- The preview uses GitHub's own stylesheet (`github-markdown-css`, dark), loaded through the same
+  digest-checked fetch as the scripts, plus a few overrides in `index.html` for browser defaults
+  that Tailwind's reset removes (list markers, inline images) and a black background to match the
+  output panel (user decision).
+- GFM task-list checkboxes are emitted by a custom marked renderer as data-attribute markers and
+  rebuilt as disabled checkboxes after sanitizing, so the sanitizer can keep forbidding every
+  `<input>`.
+- Code blocks get a hover copy button (always visible on touch screens) and Monaco's `colorize`
+  highlighting for any language Monaco knows, matched by id, alias or file extension. Copy uses the
+  source text, not the highlighted DOM. Highlight results are cached because the preview re-renders
+  on every keystroke. GitHub's stylesheet hides `<br>` inside code, so line breaks are newlines.
+- Rejected: rendering into a sandboxed iframe. Stronger isolation, but the stylesheet and the copy
+  buttons would have to live inside it, and the forbid list already covers the threats.
 - Remote images are allowed (user decision); the README tells users this exposes their IP to the
   image host.
 

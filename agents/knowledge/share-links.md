@@ -21,8 +21,8 @@ Owner: `index.html` (the codec script and the link handling in the main script).
   imports. Upgrading a library means recomputing its digest; a mismatch fails closed.
 - marked and DOMPurify use their ESM builds on purpose: the UMD builds would register themselves with
   Monaco's AMD `define` instead of setting globals.
-- Brotli loads after the `load` event (or right away when a hash is present), so it never delays
-  first paint.
+- Brotli loads only when needed: on the first Share click, or right away when the page opens with a
+  hash. Plain visits never download it.
 
 ## Execution gate
 
@@ -32,8 +32,17 @@ Owner: `index.html` (the codec script and the link handling in the main script).
   the editor. Anything else is foreign. Reloading after another tab edited the same mode shows the
   banner on your own code; that is an accepted false positive (fails safe).
 - Foreign code is inserted as an undoable edit so Ctrl+Z restores the user's code.
-- The hash writer stays off while an incoming hash is being consumed, and while paused, so it can
-  never overwrite an incoming link.
+- Links are made on demand by the Share button, which copies them to the clipboard and replaces the
+  address bar URL with them (no new history entry), even if the copy fails. Edits never touch the
+  URL (user decision), so it can be older than the editor until the next Share. An earlier design rewrote the hash 500 ms after every edit; it was dropped
+  because the address bar kept going stale against saved code and fighting incoming links.
+- Share copies via a promise-backed `ClipboardItem`, so the click's user activation still counts
+  while the WASM loads and compresses; `writeText` is the fallback.
+- The hash stays in the address bar after a link is opened (user decision). Once it is settled (own
+  link, Markdown, resumed, damaged, or just shared), it is recorded per tab in sessionStorage, and a
+  reload with that same hash is ignored, so the stale link doesn't overwrite newer edits or repeat
+  the damaged-link notice. While paused it isn't recorded, so a reload re-opens it still paused. A
+  new tab or a different hash is applied normally.
 - Switching mode while paused discards the foreign code (the editor gets that mode's saved code), so
   it unpauses without running anything.
 - Markdown links are never paused: Markdown is sanitized and never executed.

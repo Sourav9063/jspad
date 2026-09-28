@@ -28,7 +28,18 @@
   <meta name="twitter:description"
     content="The first Vim-enabled JavaScript and TypeScript playground on the web. Full Vim keybindings, VS Code engine, live JS/TS execution, all in your browser. No setup, no account required." />
 
-  <script src="https://cdn.tailwindcss.com?plugins=typography"></script>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    /* github-markdown-css assumes browser defaults that Tailwind's reset removes. */
+    .markdown-body ul { list-style: disc; }
+    .markdown-body ol { list-style: decimal; }
+    .markdown-body ul ul { list-style: circle; }
+    .markdown-body ul ul ul { list-style: square; }
+    .markdown-body .task-list-item { list-style: none; }
+    .markdown-body img { display: inline; }
+    /* Match the output panel; the id outranks the stylesheet's own background, which is injected later. */
+    #preview.markdown-body { background-color: #000; }
+  </style>
 
   <!-- Structured Data -->
   <script type="application/ld+json">
@@ -82,7 +93,10 @@
         </div>
       </div>
       <div class="flex items-center gap-3">
-        <span id="url-length" class="hidden text-xs font-mono text-zinc-500 whitespace-nowrap"></span>
+        <button id="share-btn" title="Copy a link to this code"
+          class="px-1.5 py-0.5 text-xs font-mono rounded cursor-pointer transition-colors text-zinc-400 hover:text-white border border-zinc-700 hover:border-zinc-500 whitespace-nowrap">
+          Share
+        </button>
         <button id="format-btn" title="Format code (Shift+Alt+F)"
           class="px-2.5 py-0.5 text-xs font-mono bg-sky-700 hover:bg-sky-600 text-white rounded cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-sky-700">
           Format
@@ -160,7 +174,17 @@
     <div id="output" class="flex-1 font-mono text-sm p-3 px-5 overflow-auto whitespace-pre-wrap text-sky-300">
       Output will appear here...
     </div>
-    <div id="preview" class="hidden flex-1 overflow-auto p-5 prose prose-invert prose-sm max-w-none"></div>
+    <div id="preview" class="hidden flex-1 overflow-auto p-5 markdown-body"></div>
+    <template id="code-copy-template">
+      <button data-copy-code title="Copy code"
+        class="absolute top-2 right-2 p-1.5 rounded-md border border-zinc-700 bg-zinc-900 text-zinc-400 hover:text-white cursor-pointer opacity-0 group-hover:opacity-100 focus:opacity-100 [@media(hover:none)]:opacity-100 transition-opacity">
+        <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none"
+          stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <rect width="14" height="14" x="8" y="8" rx="2" ry="2"></rect>
+          <path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"></path>
+        </svg>
+      </button>
+    </template>
   </div>
 
 
@@ -185,6 +209,10 @@
         url: `${CDN_BASE_URL}dompurify@3.4.16/dist/purify.es.mjs`,
         sha256: "c44274a7959cfdd4da871fa78a5d5fbbef55db68d118c5c0833bc4b5cf9633ad",
       },
+      githubMarkdownCss: {
+        url: `${CDN_BASE_URL}github-markdown-css@5.9.0/github-markdown-dark.css`,
+        sha256: "b45ead2db01f5856c4eb378f21f47da63f6b0ecf3be5d06385472164b7283df6",
+      },
     };
     const ASSET_TIMEOUT_MS = 20_000;
 
@@ -197,11 +225,6 @@
     const MAX_SHARE_PAYLOAD_BYTES = 4 * 1024 * 1024;
     const DECOMPRESS_CHUNK_BYTES = 64 * 1024;
     const BASE64_CHUNK_BYTES = 0x8000;
-
-    const pageLoaded = new Promise((resolve) => {
-      if (document.readyState === "complete") resolve();
-      else addEventListener("load", () => resolve(), { once: true });
-    });
 
     class ShareLinkError extends Error {
       constructor(code, message, options) {
@@ -333,7 +356,6 @@
       const payload = new TextEncoder().encode(JSON.stringify({ mode, code }));
       const tooLarge = new ShareLinkError("too-large", "This code is too long to fit in a share link.");
       if (payload.length > MAX_SHARE_PAYLOAD_BYTES) throw tooLarge;
-      await pageLoaded;
       const brotli = await loadBrotli();
       const hash = `${SHARE_FORMAT_VERSION}.${bytesToBase64Url(brotli.compress(payload, { quality: BROTLI_QUALITY }))}`;
       if (hash.length > MAX_SHARE_HASH_LENGTH) throw tooLarge;
@@ -384,13 +406,16 @@
 
       const STORAGE_KEYS = { js: "jspad_code", ts: "jspad_ts_code", md: "jspad_md_code" };
       const MODE_KEY = "jspad_mode";
+      // sessionStorage: the hash this tab has already applied or shared, so a reload doesn't re-apply it over newer edits.
+      const SETTLED_LINK_KEY = "jspad_settled_link";
       // Written before Markdown mode existed: "1" meant TypeScript mode.
       const LEGACY_TS_KEY = "jspad_ts";
       const MONACO_LANGUAGES = { js: "javascript", ts: "typescript", md: "markdown" };
       const TYPESCRIPT_URL = "https://cdn.jsdelivr.net/npm/typescript/lib/typescript.js";
-      const HASH_WRITE_DEBOUNCE_MS = 500;
+      // Above this, chat apps, email clients, URL shorteners and QR codes may cut a link off.
       const SHARE_LINK_WARN_LENGTH = 2000;
-      const SHARE_LINK_LENGTH_HINT = "Share link length in characters. Above 2,000, chat apps, email clients, URL shorteners and QR codes may cut the link off.";
+      const SHARE_FEEDBACK_MS = 1500;
+      const MAX_HIGHLIGHT_CACHE_ENTRIES = 200;
       const PAUSED_OUTPUT_TEXT = "Shared code is paused. Click Run or edit the code to run it.";
       const DETECTION_IDLE_MS = 3000;
       const MIN_DETECTION_CHARS = 40;
@@ -577,7 +602,8 @@ console.log("Markdown code blocks are shown, never run");
       const outputDiv = document.getElementById("output");
       const previewDiv = document.getElementById("preview");
       const formatBtn = document.getElementById("format-btn");
-      const urlLengthLabel = document.getElementById("url-length");
+      const shareBtn = document.getElementById("share-btn");
+      const codeCopyTemplate = document.getElementById("code-copy-template");
       const sharedBanner = document.getElementById("shared-banner");
       const noticeBar = document.getElementById("notice");
       const noticeText = document.getElementById("notice-text");
@@ -588,10 +614,6 @@ console.log("Markdown code blocks are shown, never run");
       // True while code from someone else's link is in the editor and hasn't been allowed to run.
       let isPaused = false;
       let isApplyingProgrammaticEdit = false;
-      // Off until the incoming link is consumed, so the writer can't overwrite it.
-      let isHashWriterEnabled = false;
-      let hasReportedHashWriteFailure = false;
-      let hashWriteTimer = null;
       let hashConsumption = Promise.resolve();
       let latestModeSwitchId = 0;
       let pendingSuggestion = null;
@@ -675,16 +697,27 @@ console.log("Markdown code blocks are shown, never run");
       }
 
       async function createMarkdownRenderer() {
-        const [ { marked }, { default: purify } ] = await Promise.all([
+        const [ { Marked }, { default: purify }, githubCss ] = await Promise.all([
           importVerified(VERIFIED_ASSETS.marked),
           importVerified(VERIFIED_ASSETS.domPurify),
+          fetchVerified(VERIFIED_ASSETS.githubMarkdownCss),
         ]);
+        const style = document.createElement("style");
+        style.textContent = new TextDecoder().decode(githubCss);
+        document.head.appendChild(style);
         purify.addHook("afterSanitizeAttributes", (node) => {
           if (node.tagName !== "A") return;
           node.setAttribute("target", "_blank");
           node.setAttribute("rel", "noopener noreferrer");
         });
-        renderMarkdown = (text) => purify.sanitize(marked.parse(text, { gfm: true, async: false }), MARKDOWN_SANITIZE_OPTIONS);
+        // Task-list checkboxes pass the sanitizer as markers, because every <input> is forbidden;
+        // renderPreview turns them back into disabled checkboxes.
+        const parser = new Marked({
+          gfm: true,
+          async: false,
+          renderer: { checkbox: ({ checked }) => `<span data-task-checked="${checked}"></span> ` },
+        });
+        renderMarkdown = (text) => purify.sanitize(parser.parse(text), MARKDOWN_SANITIZE_OPTIONS);
       }
 
       const modeDependencyLoaders = { ts: loadTypeScript, md: loadMarkdown };
@@ -747,7 +780,6 @@ console.log("Markdown code blocks are shown, never run");
         hideModeSuggestion();
         updateModeUi();
         renderOutput();
-        scheduleHashWrite();
         return true;
       }
 
@@ -776,61 +808,76 @@ console.log("Markdown code blocks are shown, never run");
         }
         persistCode();
         renderOutput();
-        scheduleHashWrite();
+        rememberSettledLink();
       }
 
       document.getElementById("run-shared-btn").addEventListener("click", () => setPaused(false));
 
-      function updateUrlLength() {
-        const length = location.href.length;
-        const isLong = length > SHARE_LINK_WARN_LENGTH;
-        urlLengthLabel.textContent = `link ${length.toLocaleString()}`;
-        urlLengthLabel.title = SHARE_LINK_LENGTH_HINT;
-        urlLengthLabel.classList.remove("hidden", "text-red-400");
-        urlLengthLabel.classList.toggle("text-yellow-400", isLong);
-        urlLengthLabel.classList.toggle("text-zinc-500", !isLong);
+      // Once the link's code is saved locally (not paused), the address bar keeps the link but a reload
+      // shows the saved code, including any edits made since.
+      function rememberSettledLink() {
+        if (isPaused || !location.hash) return;
+        sessionStorage.setItem(SETTLED_LINK_KEY, location.hash);
       }
 
-      function showUrlTooLong(message) {
-        urlLengthLabel.textContent = "too long to share";
-        urlLengthLabel.title = message;
-        urlLengthLabel.classList.remove("hidden", "text-zinc-500", "text-yellow-400");
-        urlLengthLabel.classList.add("text-red-400");
-      }
-
-      function scheduleHashWrite() {
-        if (!isHashWriterEnabled) return;
-        clearTimeout(hashWriteTimer);
-        hashWriteTimer = setTimeout(writeHash, HASH_WRITE_DEBOUNCE_MS);
-      }
-
-      async function writeHash() {
-        // While paused the address bar keeps the incoming link unchanged.
-        if (isPaused) return;
-        const snapshot = { mode, code: editor.getValue() };
-        let hash;
+      function showShareLinkInAddressBar(link) {
         try {
-          hash = await encodeShareHash(snapshot);
+          history.replaceState(history.state, "", link);
         } catch (error) {
-          if (error.code === "too-large") {
-            showUrlTooLong(error.message);
-            return;
-          }
-          if (!hasReportedHashWriteFailure) showNotice(error.message);
-          hasReportedHashWriteFailure = true;
+          // Safari throttles replaceState; the link was still copied.
+          console.warn("Couldn't put the share link in the address bar:", error);
           return;
         }
-        const isStale = !isHashWriterEnabled || isPaused || snapshot.mode !== mode || snapshot.code !== editor.getValue();
-        if (isStale) return;
-        try {
-          history.replaceState(history.state, "", `#${hash}`);
-        } catch (error) {
-          // Safari throttles replaceState; the next edit writes the hash again.
-          console.warn("Couldn't update the share link:", error);
+        rememberSettledLink();
+      }
+
+      async function copyText(textPromise) {
+        // A promise-backed ClipboardItem keeps the click's user activation while the link is still being built.
+        if (typeof ClipboardItem === "function") {
+          const blob = textPromise.then((text) => new Blob([ text ], { type: "text/plain" }));
+          await navigator.clipboard.write([ new ClipboardItem({ "text/plain": blob }) ]);
           return;
         }
-        updateUrlLength();
+        await navigator.clipboard.writeText(await textPromise);
       }
+
+      async function shareCode() {
+        const linkPromise = encodeShareHash({ mode, code: editor.getValue() })
+          .then((hash) => `${location.origin}${location.pathname}${location.search}#${hash}`);
+        shareBtn.textContent = "...";
+        let copyError = null;
+        try {
+          await copyText(linkPromise);
+        } catch (error) {
+          copyError = error;
+        }
+        let link;
+        try {
+          link = await linkPromise;
+        } catch (encodeError) {
+          showNotice(encodeError.message);
+          shareBtn.textContent = "Share";
+          return;
+        }
+        showShareLinkInAddressBar(link);
+        if (copyError) {
+          console.warn("Couldn't copy the share link:", copyError);
+          showNotice("Couldn't copy the link to the clipboard. Copy it from the address bar instead.");
+          shareBtn.textContent = "Share";
+          return;
+        }
+        shareBtn.textContent = "Copied!";
+        shareBtn.classList.add("text-green-400");
+        setTimeout(() => {
+          shareBtn.textContent = "Share";
+          shareBtn.classList.remove("text-green-400");
+        }, SHARE_FEEDBACK_MS);
+        if (link.length > SHARE_LINK_WARN_LENGTH) {
+          showNotice(`Link copied, but it's ${link.length.toLocaleString()} characters long. Some chat apps and email clients cut off links over ${SHARE_LINK_WARN_LENGTH.toLocaleString()} characters.`);
+        }
+      }
+
+      shareBtn.addEventListener("click", shareCode);
 
       async function applySharedLink(link) {
         if (!(await switchMode(link.mode))) return;
@@ -845,6 +892,7 @@ console.log("Markdown code blocks are shown, never run");
       async function consumeHash(source) {
         const hash = location.hash.slice(1);
         if (!hash) return;
+        if (source === "load" && location.hash === sessionStorage.getItem(SETTLED_LINK_KEY)) return;
         try {
           const link = await decodeShareHash(hash);
           // On load the page's own link matches saved code; in an open tab it matches the editor.
@@ -861,14 +909,8 @@ console.log("Markdown code blocks are shown, never run");
 
       function queueHashConsumption(source) {
         hashConsumption = hashConsumption.then(async () => {
-          isHashWriterEnabled = false;
-          clearTimeout(hashWriteTimer);
-          try {
-            await consumeHash(source);
-          } finally {
-            isHashWriterEnabled = true;
-          }
-          scheduleHashWrite();
+          await consumeHash(source);
+          rememberSettledLink();
         });
         return hashConsumption;
       }
@@ -936,7 +978,6 @@ console.log("Markdown code blocks are shown, never run");
         replaceEditorText(unformattedText, { isUndoable: true });
         persistCode();
         renderOutput();
-        scheduleHashWrite();
       }
 
       suggestionBtn.addEventListener("click", () => {
@@ -1031,11 +1072,80 @@ console.log("Markdown code blocks are shown, never run");
       function renderOutput() {
         const code = editor.getValue();
         if (mode === "md") {
-          previewDiv.replaceChildren(renderMarkdown(code));
+          renderPreview(code);
           return;
         }
         runCode(code);
       }
+
+      // Source text of each rendered code block, for its copy button (highlighted HTML loses the newlines).
+      const codeBlockSources = new WeakMap();
+      // Highlighting is async, so re-renders on every keystroke reuse earlier results instead of flickering.
+      const highlightCache = new Map();
+
+      function renderPreview(markdown) {
+        const fragment = renderMarkdown(markdown);
+        for (const pre of fragment.querySelectorAll("pre")) decorateCodeBlock(pre);
+        for (const marker of fragment.querySelectorAll("[data-task-checked]")) marker.replaceWith(createTaskCheckbox(marker));
+        previewDiv.replaceChildren(fragment);
+      }
+
+      function createTaskCheckbox(marker) {
+        const checkbox = document.createElement("input");
+        checkbox.type = "checkbox";
+        checkbox.disabled = true;
+        checkbox.checked = marker.dataset.taskChecked === "true";
+        checkbox.className = "task-list-item-checkbox";
+        marker.closest("li")?.classList.add("task-list-item");
+        return checkbox;
+      }
+
+      function decorateCodeBlock(pre) {
+        const wrapper = document.createElement("div");
+        wrapper.className = "relative group";
+        pre.replaceWith(wrapper);
+        wrapper.append(pre, codeCopyTemplate.content.firstElementChild.cloneNode(true));
+        const code = pre.querySelector("code") ?? pre;
+        const source = code.textContent.replace(/\n$/, "");
+        codeBlockSources.set(wrapper, source);
+        const language = monacoLanguageFor(/\blanguage-(\S+)/.exec(code.className)?.[ 1 ]);
+        if (language) highlightCodeBlock(code, source, language);
+      }
+
+      function monacoLanguageFor(name) {
+        if (!name) return undefined;
+        const wanted = name.toLowerCase();
+        return monaco.languages.getLanguages().find((language) =>
+          language.id === wanted
+          || language.aliases?.some((alias) => alias.toLowerCase() === wanted)
+          || language.extensions?.includes(`.${wanted}`),
+        )?.id;
+      }
+
+      function highlightCodeBlock(code, source, language) {
+        const cacheKey = `${language}\n${source}`;
+        const cached = highlightCache.get(cacheKey);
+        if (cached !== undefined) {
+          code.innerHTML = cached;
+          return;
+        }
+        monaco.editor.colorize(source, language, {}).then((lineHtml) => {
+          // GitHub's stylesheet hides <br> inside code, so break lines with the <pre>'s own newlines.
+          const html = lineHtml.replace(/<br\/>$/, "").replaceAll("<br/>", "\n");
+          if (highlightCache.size >= MAX_HIGHLIGHT_CACHE_ENTRIES) highlightCache.clear();
+          highlightCache.set(cacheKey, html);
+          // Monaco escapes the source when it builds this HTML. The block may be gone after a newer render.
+          if (code.isConnected) code.innerHTML = html;
+        }, (error) => console.warn(`Couldn't highlight ${language} code:`, error));
+      }
+
+      previewDiv.addEventListener("click", (event) => {
+        const button = event.target.closest("[data-copy-code]");
+        if (!button) return;
+        navigator.clipboard
+          .writeText(codeBlockSources.get(button.parentElement))
+          .then(() => flashCopied(button));
+      });
 
       function runCode(code) {
         if (isPaused) return;
@@ -1095,7 +1205,6 @@ console.log("Markdown code blocks are shown, never run");
         }
         persistCode();
         renderOutput();
-        scheduleHashWrite();
         scheduleIdleDetection();
       });
 

@@ -15,18 +15,29 @@ JS Pad is the first Vim-enabled JavaScript and TypeScript playground on the web.
 - **Responsive layout** horizontal split on mobile, vertical on desktop
 - **Resizable panels** drag the divider (with visible handle on mobile) to adjust editor/output split
 - **Copy buttons** copy editor code or output to clipboard with one click
-- **Markdown mode** toggle MD to write Markdown on the left and see a sanitized, rendered preview on the right; JS Pad suggests switching when pasted text looks like Markdown (or like JavaScript while in MD mode)
-- **Share links** the address bar always holds your current code and mode, Brotli-compressed into the URL hash; copy it to share, nothing is uploaded
+- **Markdown mode** toggle MD to write Markdown on the left and see a sanitized, GitHub-style preview on the right, with syntax-highlighted code blocks and a copy button on each; JS Pad suggests switching when pasted text looks like Markdown (or like JavaScript while in MD mode)
+- **Share links** the Share button copies a link holding your code and mode, Brotli-compressed into the URL hash, and puts it in the address bar; nothing is uploaded. Editing never changes the URL; click Share again to update it
 - **Auto-save** code and mode preferences persisted to localStorage across sessions
 - **Pitch-black dark theme** easy on the eyes
 - **Zero dependencies** no install, no build step, no account required
 
 ## Sharing and privacy
 
-- The link is built in your browser and never sent to a server, but it contains your code. It ends up in your browser history (and synced history), so don't paste secrets such as API keys.
-- Code from someone else's link opens **paused**: nothing runs until you click **Run** or edit it, and it isn't saved over your own code until then. Ctrl+Z brings back what you had before.
+- The link is built in your browser and never sent to a server, but it contains your code. Anyone you send it to, and their browser history, gets the code, so don't share code containing secrets such as API keys.
+- Code from someone else's link opens **paused**: nothing runs until you click **Run** or edit it, and it isn't saved over your own code until then. Ctrl+Z brings back what you had before. The link stays in the address bar; once the code runs, reloading that tab keeps your later edits instead of re-opening the link.
 - Markdown links render right away, because Markdown is never executed. Images in a shared Markdown document load from wherever the author points them, which lets that server see your IP address.
-- Very long code makes long links; the header shows the link length and turns yellow past about 2,000 characters, where some chat apps and browsers start to cut links off.
+- Very long code makes long links. If a copied link is over about 2,000 characters, JS Pad warns you, because some chat apps and email clients cut such links off.
+
+## Tests
+
+Browser tests live in `test/` and run in a headless browser through `playwright-cli` (`npm install -g @playwright/cli`). Run all of them, or pass specific files:
+
+```sh
+test/run.sh
+test/run.sh test/share-button.test.js
+```
+
+The runner serves the repo on `127.0.0.1:5601` (override with `JSPAD_TEST_PORT`), needs `python3` and `node`, and needs network access to the CDNs the page loads.
 
 ## Use cases
 
