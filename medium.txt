@@ -1,0 +1,135 @@
+I Built a Vim-Enabled JavaScript & TypeScript Playground That Lives Entirely in Your Browser
+
+https://sourav9063.github.io/jspad/
+
+---
+
+I wanted a JavaScript scratchpad I could open instantly, type in Vim, and not fight with. Every tool I found was either too heavy, required an account, or treated Vim mode as an afterthought — a half-broken plugin bolted onto a CodeMirror textarea.
+
+So I built JS Pad. One HTML file. No backend. No install. No account. Open it and write code.
+
+---
+
+What It Is
+
+JS Pad is an in-browser JavaScript and TypeScript playground powered by Monaco Editor — the same engine that runs VS Code. It runs your code live as you type, captures console output in a side panel, and gets out of your way.
+
+Live: https://sourav9063.github.io/jspad/
+
+---
+
+The Vim Part (This Is the Main One)
+
+Most browser editors that claim "Vim support" mean they mapped j/k in normal mode. JS Pad uses monaco-vim, which brings real Vim keybindings — motions, operators, visual mode, command-line mode, the works.
+
+When you enable Vim mode:
+- Relative line numbers turn on automatically
+- A status bar appears at the bottom of the editor showing the current mode (NORMAL, INSERT, VISUAL)
+- Your preference is saved to localStorage — next time you open the page, Vim is already on
+
+The toggle is a single button in the header. One click. No settings page, no configuration file.
+
+For anyone who has trained their fingers to think in Vim, this is the difference between a tool that feels native and one that constantly interrupts you.
+
+---
+
+TypeScript — Lazy Loaded, Not Assumed
+
+TypeScript support is opt-in and lazy. The TypeScript compiler (~6MB) is not loaded until you click the TS button. Once it loads, it never loads again in that session.
+
+When you switch to TypeScript mode:
+- Monaco switches to the typescript language — full IntelliSense, type checking squiggles, autocomplete for types
+- Your current JS code is saved and the TS editor loads your previous TypeScript session (or the default TS snippet on first use)
+- The compiler transpiles your code before execution — interfaces, enums, generics, async/await with typed returns, all of it works
+
+Switching back to JS restores your JavaScript code exactly as you left it. The two modes maintain separate localStorage entries, so nothing bleeds between them.
+
+This is not a TypeScript type checker in the execution sense — ts.transpileModule strips types and compiles to ES2020. Type errors show as editor squiggles, not runtime failures. But that is the right trade-off for a scratchpad: you get the authoring experience of TypeScript and the immediacy of live execution.
+
+---
+
+The VS Code Part
+
+Monaco Editor is not "VS Code-like." It is VS Code's editor, extracted. JS Pad uses it directly:
+
+- Syntax highlighting via the same tokenizer VS Code uses
+- Autocomplete and IntelliSense for JavaScript and TypeScript built in — no configuration needed
+- Code formatting via Prettier (editor.action.formatDocument), triggered by the Format button or Shift+Alt+F
+- A minimap in the editor (scaled down, non-character rendering, so it does not look noisy)
+- formatOnPaste enabled — paste messy code, it cleans up automatically
+
+The theme is pitch-black (#000000 background, not the default #1e1e1e of vs-dark). Editor line highlight is #111111. Line numbers are dimmed to #444444. If you work in a dark room, this matters.
+
+---
+
+localStorage — Two Separate Slots
+
+Most tools save one blob to localStorage. JS Pad saves two — one for JavaScript, one for TypeScript.
+
+- jspad_code: your JavaScript session
+- jspad_ts_code: your TypeScript session
+- jspad_vim: whether Vim mode is on
+- jspad_ts: whether TypeScript mode is on
+
+On every keystroke, the current editor value is written to the appropriate key. On reload, the editor initializes with your last session. If the saved value is empty, the default snippet for that mode is shown instead.
+
+This means you can use both modes independently across sessions without them interfering with each other.
+
+---
+
+Output Panel
+
+The right (or bottom, on mobile) panel captures:
+
+- console.log → sky blue
+- console.warn → yellow, prefixed with [warn]
+- console.error → red, prefixed with [error]
+
+Each log entry is separated by a subtle divider. Objects and arrays are pretty-printed with JSON.stringify(..., null, 2). Errors (instanceof Error) show their message. Runtime exceptions are caught and displayed in red without crashing the panel.
+
+Async code works — Promise.resolve, Promise.reject, setTimeout. Anything that runs in the JavaScript event loop runs here.
+
+---
+
+Layout
+
+On desktop: editor on the left, output on the right. Default split is 60/40. The divider is draggable.
+
+On mobile: editor on top, output on bottom. The divider becomes a horizontal drag handle with a visible grip indicator. Minimum panel size is enforced in both directions so neither panel collapses completely.
+
+The layout is detected on load and on window resize — rotate your device and the split recalculates.
+
+---
+
+Dependencies
+
+JS Pad has zero npm dependencies. Everything is loaded from CDN at runtime:
+
+- Monaco Editor 0.44.0 — cdnjs.cloudflare.com (editor engine)
+- monaco-vim 0.4.4 — cdn.jsdelivr.net (Vim keybindings)
+- TypeScript compiler (latest) — cdn.jsdelivr.net (lazy, only when TS mode is enabled)
+- Tailwind CSS — cdn.tailwindcss.com (utility classes for layout and UI)
+
+No build step. No bundler. No package.json. The entire application is one index.html file you can open directly in a browser.
+
+---
+
+What It Is Not
+
+JS Pad is a scratchpad, not an IDE. It does not support:
+- Multiple files or tabs
+- npm imports (no module resolution)
+- Saving or sharing snippets via URL
+- Running Node.js APIs
+
+If you need any of that, there are heavier tools built for it. JS Pad is for the moment when you want to test a function, explore a TypeScript generic, or just write JavaScript without opening a project.
+
+---
+
+Try It
+
+https://sourav9063.github.io/jspad/
+
+Source: https://github.com/Sourav9063/jspad
+
+Open it, hit the VIM button, write some code.

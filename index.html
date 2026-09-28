@@ -28,7 +28,7 @@
   <meta name="twitter:description"
     content="The first Vim-enabled JavaScript and TypeScript playground on the web. Full Vim keybindings, VS Code engine, live JS/TS execution, all in your browser. No setup, no account required." />
 
-  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.tailwindcss.com?plugins=typography"></script>
 
   <!-- Structured Data -->
   <script type="application/ld+json">
@@ -71,17 +71,30 @@
 <body class="flex flex-col md:flex-row h-screen bg-black overflow-hidden">
   <div id="editor-panel" class="flex flex-col">
     <div class="flex items-center justify-between px-3 h-[30px] bg-black border-b border-zinc-800">
-      <span class="text-white font-mono font-semibold tracking-tight text-sm">JS<span
-          class="text-sky-400">Pad</span></span>
+      <div class="flex items-center gap-3 min-w-0">
+        <span class="text-white font-mono font-semibold tracking-tight text-sm">JS<span
+            class="text-sky-400">Pad</span></span>
+        <div id="mode-suggestion" class="hidden flex items-center gap-1 text-xs font-mono">
+          <button id="mode-suggestion-btn"
+            class="px-2 py-0.5 rounded bg-emerald-800 hover:bg-emerald-700 text-white cursor-pointer whitespace-nowrap"></button>
+          <button id="mode-suggestion-dismiss-btn" title="Dismiss suggestion"
+            class="px-1 text-zinc-500 hover:text-white cursor-pointer">&#x2715;</button>
+        </div>
+      </div>
       <div class="flex items-center gap-3">
+        <span id="url-length" class="hidden text-xs font-mono text-zinc-500 whitespace-nowrap"></span>
         <button id="format-btn" title="Format code (Shift+Alt+F)"
-          class="px-2.5 py-0.5 text-xs font-mono bg-sky-700 hover:bg-sky-600 text-white rounded cursor-pointer">
+          class="px-2.5 py-0.5 text-xs font-mono bg-sky-700 hover:bg-sky-600 text-white rounded cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-sky-700">
           Format
         </button>
         <span class="text-xs text-zinc-500 font-mono">Shift+Alt+F</span>
         <button id="ts-toggle-btn" title="Toggle TypeScript mode"
           class="px-1.5 py-0.5 text-xs font-mono rounded cursor-pointer transition-colors text-zinc-500 hover:text-white border border-zinc-700 hover:border-zinc-500">
           TS
+        </button>
+        <button id="md-toggle-btn" title="Toggle Markdown mode"
+          class="px-1.5 py-0.5 text-xs font-mono rounded cursor-pointer transition-colors text-zinc-500 hover:text-white border border-zinc-700 hover:border-zinc-500">
+          MD
         </button>
         <button id="vim-toggle-btn" title="Toggle Vim mode"
           class="px-1.5 py-0.5 text-xs font-mono rounded cursor-pointer transition-colors text-zinc-500 hover:text-white border border-zinc-700 hover:border-zinc-500">
@@ -133,12 +146,221 @@
         </button>
       </div>
     </div>
+    <div id="shared-banner"
+      class="hidden flex items-center gap-3 px-3 py-2 bg-amber-950/60 border-b border-amber-800 text-xs font-mono text-amber-200">
+      <span class="flex-1">This code came from a shared link and hasn't run yet. Editing it will run it.</span>
+      <button id="run-shared-btn"
+        class="px-2.5 py-0.5 bg-amber-600 hover:bg-amber-500 text-black rounded cursor-pointer">Run</button>
+    </div>
+    <div id="notice"
+      class="hidden flex items-center gap-3 px-3 py-2 bg-red-950/60 border-b border-red-900 text-xs font-mono text-red-200">
+      <span id="notice-text" class="flex-1"></span>
+      <button id="notice-dismiss-btn" title="Dismiss" class="px-1 text-red-300 hover:text-white cursor-pointer">&#x2715;</button>
+    </div>
     <div id="output" class="flex-1 font-mono text-sm p-3 px-5 overflow-auto whitespace-pre-wrap text-sky-300">
       Output will appear here...
     </div>
+    <div id="preview" class="hidden flex-1 overflow-auto p-5 prose prose-invert prose-sm max-w-none"></div>
   </div>
 
+
   <script src="https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.44.0/min/vs/loader.min.js"></script>
+  <script>
+    const CDN_BASE_URL = "https://cdn.jsdelivr.net/npm/";
+    // Pinned CDN files checked against SHA-256 digests before use. Changing a version means recomputing its digest.
+    const VERIFIED_ASSETS = {
+      brotliGlue: {
+        url: `${CDN_BASE_URL}brotli-wasm@3.0.1/pkg.web/brotli_wasm.js`,
+        sha256: "cd7c6ad22230d9ad5618f4bc5b1a032677a18bcc9c7abecba6d5439beff031bc",
+      },
+      brotliWasm: {
+        url: `${CDN_BASE_URL}brotli-wasm@3.0.1/pkg.web/brotli_wasm_bg.wasm`,
+        sha256: "9ef0a025046bf7d87b7cdb8eac3f73a5c8fea2f1adb848cc9768345573fcd8a9",
+      },
+      marked: {
+        url: `${CDN_BASE_URL}marked@18.0.14/lib/marked.esm.js`,
+        sha256: "528a1b88bef88fc27277e06036ce7f4afb6a220b18110ba57c09e292b24a7ce0",
+      },
+      domPurify: {
+        url: `${CDN_BASE_URL}dompurify@3.4.16/dist/purify.es.mjs`,
+        sha256: "c44274a7959cfdd4da871fa78a5d5fbbef55db68d118c5c0833bc4b5cf9633ad",
+      },
+    };
+    const ASSET_TIMEOUT_MS = 20_000;
+
+    const SHARE_FORMAT_VERSION = "1";
+    const SHARE_HASH_PATTERN = /^(\d+)\.([A-Za-z0-9_-]+)$/;
+    const SHARE_MODES = [ "js", "ts", "md" ];
+    const BROTLI_QUALITY = 11;
+    const MAX_SHARE_HASH_LENGTH = 1_000_000;
+    // Caps decompressed output so a tiny crafted link can't expand into gigabytes.
+    const MAX_SHARE_PAYLOAD_BYTES = 4 * 1024 * 1024;
+    const DECOMPRESS_CHUNK_BYTES = 64 * 1024;
+    const BASE64_CHUNK_BYTES = 0x8000;
+
+    const pageLoaded = new Promise((resolve) => {
+      if (document.readyState === "complete") resolve();
+      else addEventListener("load", () => resolve(), { once: true });
+    });
+
+    class ShareLinkError extends Error {
+      constructor(code, message, options) {
+        super(message, options);
+        this.name = "ShareLinkError";
+        this.code = code;
+      }
+    }
+
+    const damagedLinkError = (cause) =>
+      new ShareLinkError("damaged", "This link is damaged or incomplete, so it couldn't be opened.", { cause });
+
+    function toHex(buffer) {
+      return Array.from(new Uint8Array(buffer), (byte) => byte.toString(16).padStart(2, "0")).join("");
+    }
+
+    async function fetchVerified({ url, sha256 }) {
+      const response = await fetch(url, { credentials: "omit", signal: AbortSignal.timeout(ASSET_TIMEOUT_MS) });
+      if (!response.ok) throw new Error(`${url} returned HTTP ${response.status}`);
+      const bytes = await response.arrayBuffer();
+      const digest = toHex(await crypto.subtle.digest("SHA-256", bytes));
+      if (digest !== sha256) throw new Error(`${url} failed its integrity check`);
+      return bytes;
+    }
+
+    // Dynamic import() can't carry an integrity attribute, so verify the bytes first and import them from a blob.
+    async function importVerified(asset) {
+      const bytes = await fetchVerified(asset);
+      const blobUrl = URL.createObjectURL(new Blob([ bytes ], { type: "text/javascript" }));
+      try {
+        return await import(blobUrl);
+      } finally {
+        URL.revokeObjectURL(blobUrl);
+      }
+    }
+
+    let brotliPromise = null;
+
+    function loadBrotli() {
+      brotliPromise ??= initBrotli().catch((cause) => {
+        brotliPromise = null;
+        throw new ShareLinkError("load-failed", "Couldn't load the share-link compressor. Check your connection and try again.", { cause });
+      });
+      return brotliPromise;
+    }
+
+    async function initBrotli() {
+      const [ brotli, wasmBytes ] = await Promise.all([
+        importVerified(VERIFIED_ASSETS.brotliGlue),
+        fetchVerified(VERIFIED_ASSETS.brotliWasm),
+      ]);
+      await brotli.default(wasmBytes);
+      return brotli;
+    }
+
+    function bytesToBase64Url(bytes) {
+      let binary = "";
+      for (let i = 0; i < bytes.length; i += BASE64_CHUNK_BYTES) {
+        binary += String.fromCharCode(...bytes.subarray(i, i + BASE64_CHUNK_BYTES));
+      }
+      return btoa(binary).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
+    }
+
+    function base64UrlToBytes(text) {
+      const base64 = text.replace(/-/g, "+").replace(/_/g, "/");
+      const padded = base64 + "=".repeat((4 - (base64.length % 4)) % 4);
+      let binary;
+      try {
+        binary = atob(padded);
+      } catch (cause) {
+        throw damagedLinkError(cause);
+      }
+      return Uint8Array.from(binary, (char) => char.charCodeAt(0));
+    }
+
+    function concatBytes(chunks) {
+      const result = new Uint8Array(chunks.reduce((total, chunk) => total + chunk.length, 0));
+      let offset = 0;
+      for (const chunk of chunks) {
+        result.set(chunk, offset);
+        offset += chunk.length;
+      }
+      return result;
+    }
+
+    function decompressBounded(brotli, input) {
+      const { ResultSuccess, NeedsMoreOutput } = brotli.BrotliStreamResultCode;
+      const stream = new brotli.DecompressStream();
+      const chunks = [];
+      let inputOffset = 0;
+      try {
+        for (;;) {
+          const result = stream.decompress(input.subarray(inputOffset), DECOMPRESS_CHUNK_BYTES);
+          const resultCode = result.code;
+          chunks.push(result.buf);
+          inputOffset += result.input_offset;
+          result.free();
+          if (stream.total_out() > MAX_SHARE_PAYLOAD_BYTES) {
+            throw new ShareLinkError("too-large", "This link holds more code than JS Pad can open.");
+          }
+          if (resultCode === ResultSuccess) break;
+          // NeedsMoreInput here means the link was cut off.
+          if (resultCode !== NeedsMoreOutput) throw damagedLinkError();
+        }
+      } catch (error) {
+        if (error instanceof ShareLinkError) throw error;
+        throw damagedLinkError(error);
+      } finally {
+        stream.free();
+      }
+      if (inputOffset !== input.length) throw damagedLinkError();
+      return concatBytes(chunks);
+    }
+
+    function parseSharePayload(text) {
+      let value;
+      try {
+        value = JSON.parse(text);
+      } catch (cause) {
+        throw damagedLinkError(cause);
+      }
+      const isValid = typeof value === "object" && value !== null
+        && typeof value.code === "string" && SHARE_MODES.includes(value.mode);
+      if (!isValid) throw damagedLinkError();
+      return { mode: value.mode, code: value.code };
+    }
+
+    async function encodeShareHash({ mode, code }) {
+      const payload = new TextEncoder().encode(JSON.stringify({ mode, code }));
+      const tooLarge = new ShareLinkError("too-large", "This code is too long to fit in a share link.");
+      if (payload.length > MAX_SHARE_PAYLOAD_BYTES) throw tooLarge;
+      await pageLoaded;
+      const brotli = await loadBrotli();
+      const hash = `${SHARE_FORMAT_VERSION}.${bytesToBase64Url(brotli.compress(payload, { quality: BROTLI_QUALITY }))}`;
+      if (hash.length > MAX_SHARE_HASH_LENGTH) throw tooLarge;
+      return hash;
+    }
+
+    async function decodeShareHash(hash) {
+      if (hash.length > MAX_SHARE_HASH_LENGTH) {
+        throw new ShareLinkError("too-large", "This link holds more code than JS Pad can open.");
+      }
+      const match = SHARE_HASH_PATTERN.exec(hash);
+      if (!match) throw damagedLinkError();
+      if (match[ 1 ] !== SHARE_FORMAT_VERSION) {
+        throw new ShareLinkError("unsupported-version", "This link was made by a newer version of JS Pad. Reload the page and try again.");
+      }
+      const compressed = base64UrlToBytes(match[ 2 ]);
+      const brotli = await loadBrotli();
+      const bytes = decompressBounded(brotli, compressed);
+      let text;
+      try {
+        text = new TextDecoder("utf-8", { fatal: true }).decode(bytes);
+      } catch (cause) {
+        throw damagedLinkError(cause);
+      }
+      return parseSharePayload(text);
+    }
+  </script>
   <script>
     require.config({
       paths: {
@@ -160,8 +382,35 @@
         },
       });
 
-      const STORAGE_KEY = "jspad_code";
-      const STORAGE_TS_KEY = "jspad_ts_code";
+      const STORAGE_KEYS = { js: "jspad_code", ts: "jspad_ts_code", md: "jspad_md_code" };
+      const MODE_KEY = "jspad_mode";
+      // Written before Markdown mode existed: "1" meant TypeScript mode.
+      const LEGACY_TS_KEY = "jspad_ts";
+      const MONACO_LANGUAGES = { js: "javascript", ts: "typescript", md: "markdown" };
+      const TYPESCRIPT_URL = "https://cdn.jsdelivr.net/npm/typescript/lib/typescript.js";
+      const HASH_WRITE_DEBOUNCE_MS = 500;
+      const SHARE_LINK_WARN_LENGTH = 2000;
+      const SHARE_LINK_LENGTH_HINT = "Share link length in characters. Above 2,000, chat apps, email clients, URL shorteners and QR codes may cut the link off.";
+      const PAUSED_OUTPUT_TEXT = "Shared code is paused. Click Run or edit the code to run it.";
+      const DETECTION_IDLE_MS = 3000;
+      const MIN_DETECTION_CHARS = 40;
+      const LARGE_PASTE_CHARS = 200;
+      const MIN_MARKDOWN_SIGNALS = 2;
+      const MARKDOWN_SIGNAL_PATTERNS = [
+        /^#{1,6}[ \t]+\S/m, // ATX heading; "#!" and "#privateField" never match
+        /^(?:```|~~~)/m,
+        /^(?:[-*+]|\d+\.)[ \t]+\S/m, // top-level list item, so " * " JSDoc lines don't count
+        /^>[ \t]?\S/m,
+        /^\|(?:[^|\n]*\|){2,}[ \t]*$/m,
+        /(?:^|[\s(])\[[^\]\n]+\]\((?:https?:\/\/|mailto:|#|\.{0,2}\/)[^)\s]*\)/m, // inline link, not obj[key](arg)
+      ];
+      // Anything that could run script, submit data, or restyle the page outside the preview.
+      const MARKDOWN_SANITIZE_OPTIONS = {
+        USE_PROFILES: { html: true },
+        FORBID_TAGS: [ "style", "form", "input", "button", "textarea", "select", "iframe" ],
+        FORBID_ATTR: [ "style" ],
+        RETURN_DOM_FRAGMENT: true,
+      };
 
       const defaultTsCode = `// === Types & Interfaces ===
 interface User {
@@ -210,8 +459,6 @@ async function fetchUser(id: number): Promise<User> {
 }
 
 fetchUser(1).then((u) => console.log("fetched:", u));`;
-
-      const savedCode = localStorage.getItem(STORAGE_KEY);
 
       const defaultCode = `// === Primitives ===
 console.log("string");
@@ -269,10 +516,51 @@ Promise.reject(new Error("async failure")).catch((err) =>
 // Uncomment to test runtime error display:
 // throw new Error("uncaught runtime error");`;
 
+      const defaultMdCode = `# Markdown preview
+
+Write **Markdown** on the left and see it rendered here.
+
+## Lists
+
+- Item one
+- Item two
+  - Nested item
+
+1. First
+2. Second
+
+## Code
+
+\`\`\`js
+console.log("Markdown code blocks are shown, never run");
+\`\`\`
+
+> Blockquotes work too.
+
+| Mode | Output  |
+| ---- | ------- |
+| JS   | Console |
+| MD   | Preview |
+
+[Links](https://github.com/Sourav9063/jspad) open in a new tab.`;
+
+      const DEFAULT_CODE = { js: defaultCode, ts: defaultTsCode, md: defaultMdCode };
+
+      function savedCodeFor(targetMode) {
+        return localStorage.getItem(STORAGE_KEYS[ targetMode ]) || DEFAULT_CODE[ targetMode ];
+      }
+
+      function readStoredMode() {
+        const storedMode = localStorage.getItem(MODE_KEY);
+        if (SHARE_MODES.includes(storedMode)) return storedMode;
+        return localStorage.getItem(LEGACY_TS_KEY) === "1" ? "ts" : "js";
+      }
+
+      const container = document.getElementById("container");
       const editor = monaco.editor.create(
-        document.getElementById("container"),
+        container,
         {
-          value: savedCode || defaultCode,
+          value: savedCodeFor("js"),
           language: "javascript",
           theme: "pitch-black",
           automaticLayout: true,
@@ -287,6 +575,45 @@ Promise.reject(new Error("async failure")).catch((err) =>
       );
 
       const outputDiv = document.getElementById("output");
+      const previewDiv = document.getElementById("preview");
+      const formatBtn = document.getElementById("format-btn");
+      const urlLengthLabel = document.getElementById("url-length");
+      const sharedBanner = document.getElementById("shared-banner");
+      const noticeBar = document.getElementById("notice");
+      const noticeText = document.getElementById("notice-text");
+      const suggestionChip = document.getElementById("mode-suggestion");
+      const suggestionBtn = document.getElementById("mode-suggestion-btn");
+
+      let mode = "js";
+      // True while code from someone else's link is in the editor and hasn't been allowed to run.
+      let isPaused = false;
+      let isApplyingProgrammaticEdit = false;
+      // Off until the incoming link is consumed, so the writer can't overwrite it.
+      let isHashWriterEnabled = false;
+      let hasReportedHashWriteFailure = false;
+      let hashWriteTimer = null;
+      let hashConsumption = Promise.resolve();
+      let latestModeSwitchId = 0;
+      let pendingSuggestion = null;
+      let isSuggestionDismissed = false;
+      let pasteContext = null;
+      let idleDetectionTimer = null;
+
+      function setToggleActive(button, isActive) {
+        button.classList.toggle("text-zinc-500", !isActive);
+        button.classList.toggle("border-zinc-700", !isActive);
+        button.classList.toggle("text-sky-400", isActive);
+        button.classList.toggle("border-sky-600", isActive);
+      }
+
+      function showNotice(message) {
+        noticeText.textContent = message;
+        noticeBar.classList.remove("hidden");
+      }
+
+      document.getElementById("notice-dismiss-btn").addEventListener("click", () => {
+        noticeBar.classList.add("hidden");
+      });
 
       const VIM_KEY = "jspad_vim";
       const vimBtn = document.getElementById("vim-toggle-btn");
@@ -300,74 +627,361 @@ Promise.reject(new Error("async failure")).catch((err) =>
           vimMode = MonacoVim.initVimMode(editor, vimStatusbar);
           editor.updateOptions({ lineNumbers: "relative" });
           vimStatusbar.classList.remove("hidden");
-          vimBtn.classList.remove("text-zinc-500", "border-zinc-700");
-          vimBtn.classList.add("text-sky-400", "border-sky-600");
         } else {
           if (vimMode) { vimMode.dispose(); vimMode = null; }
           editor.updateOptions({ lineNumbers: "on" });
           vimStatusbar.classList.add("hidden");
-          vimBtn.classList.add("text-zinc-500", "border-zinc-700");
-          vimBtn.classList.remove("text-sky-400", "border-sky-600");
         }
+        setToggleActive(vimBtn, active);
         localStorage.setItem(VIM_KEY, active ? "1" : "0");
       }
 
       vimBtn.addEventListener("click", () => setVimActive(!vimMode));
 
-      const TS_KEY = "jspad_ts";
-      const tsBtn = document.getElementById("ts-toggle-btn");
-      let tsActive = false;
-      let tsLoaded = false;
-      let tsLoading = false;
+      const modeToggleButtons = {
+        ts: document.getElementById("ts-toggle-btn"),
+        md: document.getElementById("md-toggle-btn"),
+      };
 
-      function applyTsMode(active) {
-        // Save current content to the outgoing mode's key
-        if (active) {
-          localStorage.setItem(STORAGE_KEY, editor.getValue());
-        } else {
-          localStorage.setItem(STORAGE_TS_KEY, editor.getValue());
-        }
+      let typeScriptPromise = null;
 
-        tsActive = active;
-        const model = editor.getModel();
-        monaco.editor.setModelLanguage(model, active ? "typescript" : "javascript");
-
-        // Load saved content for the new mode, or fall back to default
-        const saved = active
-          ? localStorage.getItem(STORAGE_TS_KEY)
-          : localStorage.getItem(STORAGE_KEY);
-        editor.setValue(saved || (active ? defaultTsCode : defaultCode));
-
-        if (active) {
-          tsBtn.classList.remove("text-zinc-500", "border-zinc-700");
-          tsBtn.classList.add("text-sky-400", "border-sky-600");
-        } else {
-          tsBtn.classList.add("text-zinc-500", "border-zinc-700");
-          tsBtn.classList.remove("text-sky-400", "border-sky-600");
-        }
-        localStorage.setItem(TS_KEY, active ? "1" : "0");
-        runCode(editor.getValue());
+      function loadTypeScript() {
+        typeScriptPromise ??= loadClassicScript(TYPESCRIPT_URL).catch((cause) => {
+          typeScriptPromise = null;
+          throw new Error("Couldn't load the TypeScript compiler. Check your connection and try again.", { cause });
+        });
+        return typeScriptPromise;
       }
 
-      function loadTypeScript(cb) {
-        if (tsLoaded) return cb();
-        if (tsLoading) return;
-        tsLoading = true;
-        tsBtn.textContent = "...";
-        const s = document.createElement("script");
-        s.src = "https://cdn.jsdelivr.net/npm/typescript/lib/typescript.js";
-        s.onload = () => { tsLoaded = true; tsBtn.textContent = "TS"; cb(); };
-        document.head.appendChild(s);
+      function loadClassicScript(src) {
+        return new Promise((resolve, reject) => {
+          const script = document.createElement("script");
+          script.src = src;
+          script.onload = () => resolve();
+          script.onerror = () => reject(new Error(`Failed to load ${src}`));
+          document.head.appendChild(script);
+        });
       }
 
-      tsBtn.addEventListener("click", () => {
-        if (tsActive) { applyTsMode(false); return; }
-        loadTypeScript(() => applyTsMode(true));
+      let renderMarkdown = null;
+      let markdownPromise = null;
+
+      function loadMarkdown() {
+        markdownPromise ??= createMarkdownRenderer().catch((cause) => {
+          markdownPromise = null;
+          throw new Error("Couldn't load the Markdown renderer. Check your connection and try again.", { cause });
+        });
+        return markdownPromise;
+      }
+
+      async function createMarkdownRenderer() {
+        const [ { marked }, { default: purify } ] = await Promise.all([
+          importVerified(VERIFIED_ASSETS.marked),
+          importVerified(VERIFIED_ASSETS.domPurify),
+        ]);
+        purify.addHook("afterSanitizeAttributes", (node) => {
+          if (node.tagName !== "A") return;
+          node.setAttribute("target", "_blank");
+          node.setAttribute("rel", "noopener noreferrer");
+        });
+        renderMarkdown = (text) => purify.sanitize(marked.parse(text, { gfm: true, async: false }), MARKDOWN_SANITIZE_OPTIONS);
+      }
+
+      const modeDependencyLoaders = { ts: loadTypeScript, md: loadMarkdown };
+
+      async function loadModeDependencies(targetMode) {
+        const load = modeDependencyLoaders[ targetMode ];
+        if (!load) return;
+        const button = modeToggleButtons[ targetMode ];
+        button.textContent = "...";
+        try {
+          await load();
+        } finally {
+          button.textContent = targetMode.toUpperCase();
+        }
+      }
+
+      function persistCode() {
+        if (isPaused) return;
+        localStorage.setItem(STORAGE_KEYS[ mode ], editor.getValue());
+      }
+
+      // Edits made here don't count as the user typing: they never resume paused code or trigger detection.
+      function replaceEditorText(text, { isUndoable }) {
+        isApplyingProgrammaticEdit = true;
+        try {
+          if (!isUndoable) {
+            editor.setValue(text);
+            return;
+          }
+          editor.pushUndoStop();
+          editor.executeEdits("shared-link", [ { range: editor.getModel().getFullModelRange(), text } ]);
+          editor.pushUndoStop();
+        } finally {
+          isApplyingProgrammaticEdit = false;
+        }
+      }
+
+      function updateModeUi() {
+        setToggleActive(modeToggleButtons.ts, mode === "ts");
+        setToggleActive(modeToggleButtons.md, mode === "md");
+        outputDiv.classList.toggle("hidden", mode === "md");
+        previewDiv.classList.toggle("hidden", mode !== "md");
+        formatBtn.disabled = mode === "md";
+      }
+
+      // Resolves true once the editor is in nextMode, or false if a newer switch superseded this one.
+      async function switchMode(nextMode, { keepText = false, sourceSnapshot } = {}) {
+        if (nextMode === mode) return true;
+        const switchId = ++latestModeSwitchId;
+        await loadModeDependencies(nextMode);
+        if (switchId !== latestModeSwitchId) return false;
+
+        if (sourceSnapshot === undefined) persistCode();
+        else localStorage.setItem(STORAGE_KEYS[ mode ], sourceSnapshot);
+        mode = nextMode;
+        localStorage.setItem(MODE_KEY, mode);
+        monaco.editor.setModelLanguage(editor.getModel(), MONACO_LANGUAGES[ mode ]);
+        if (!keepText) replaceEditorText(savedCodeFor(mode), { isUndoable: false });
+        persistCode();
+        hideModeSuggestion();
+        updateModeUi();
+        renderOutput();
+        scheduleHashWrite();
+        return true;
+      }
+
+      async function toggleMode(targetMode) {
+        const nextMode = mode === targetMode ? "js" : targetMode;
+        let didSwitch;
+        try {
+          didSwitch = await switchMode(nextMode);
+        } catch (error) {
+          showNotice(error.message);
+          return;
+        }
+        // The switch replaced the editor with this mode's saved code, so the unrun shared code is gone.
+        if (didSwitch && isPaused) setPaused(false);
+      }
+
+      modeToggleButtons.ts.addEventListener("click", () => toggleMode("ts"));
+      modeToggleButtons.md.addEventListener("click", () => toggleMode("md"));
+
+      function setPaused(paused) {
+        isPaused = paused;
+        sharedBanner.classList.toggle("hidden", !paused);
+        if (paused) {
+          outputDiv.textContent = PAUSED_OUTPUT_TEXT;
+          return;
+        }
+        persistCode();
+        renderOutput();
+        scheduleHashWrite();
+      }
+
+      document.getElementById("run-shared-btn").addEventListener("click", () => setPaused(false));
+
+      function updateUrlLength() {
+        const length = location.href.length;
+        const isLong = length > SHARE_LINK_WARN_LENGTH;
+        urlLengthLabel.textContent = `link ${length.toLocaleString()}`;
+        urlLengthLabel.title = SHARE_LINK_LENGTH_HINT;
+        urlLengthLabel.classList.remove("hidden", "text-red-400");
+        urlLengthLabel.classList.toggle("text-yellow-400", isLong);
+        urlLengthLabel.classList.toggle("text-zinc-500", !isLong);
+      }
+
+      function showUrlTooLong(message) {
+        urlLengthLabel.textContent = "too long to share";
+        urlLengthLabel.title = message;
+        urlLengthLabel.classList.remove("hidden", "text-zinc-500", "text-yellow-400");
+        urlLengthLabel.classList.add("text-red-400");
+      }
+
+      function scheduleHashWrite() {
+        if (!isHashWriterEnabled) return;
+        clearTimeout(hashWriteTimer);
+        hashWriteTimer = setTimeout(writeHash, HASH_WRITE_DEBOUNCE_MS);
+      }
+
+      async function writeHash() {
+        // While paused the address bar keeps the incoming link unchanged.
+        if (isPaused) return;
+        const snapshot = { mode, code: editor.getValue() };
+        let hash;
+        try {
+          hash = await encodeShareHash(snapshot);
+        } catch (error) {
+          if (error.code === "too-large") {
+            showUrlTooLong(error.message);
+            return;
+          }
+          if (!hasReportedHashWriteFailure) showNotice(error.message);
+          hasReportedHashWriteFailure = true;
+          return;
+        }
+        const isStale = !isHashWriterEnabled || isPaused || snapshot.mode !== mode || snapshot.code !== editor.getValue();
+        if (isStale) return;
+        try {
+          history.replaceState(history.state, "", `#${hash}`);
+        } catch (error) {
+          // Safari throttles replaceState; the next edit writes the hash again.
+          console.warn("Couldn't update the share link:", error);
+          return;
+        }
+        updateUrlLength();
+      }
+
+      async function applySharedLink(link) {
+        if (!(await switchMode(link.mode))) return;
+        hideModeSuggestion();
+        // Markdown is sanitized and never executed, so it renders without a pause.
+        if (link.mode !== "md") setPaused(true);
+        replaceEditorText(link.code, { isUndoable: true });
+        persistCode();
+        renderOutput();
+      }
+
+      async function consumeHash(source) {
+        const hash = location.hash.slice(1);
+        if (!hash) return;
+        try {
+          const link = await decodeShareHash(hash);
+          // On load the page's own link matches saved code; in an open tab it matches the editor.
+          const ownCode = source === "load" ? savedCodeFor(link.mode) : (link.mode === mode ? editor.getValue() : null);
+          if (link.code === ownCode) {
+            await switchMode(link.mode);
+            return;
+          }
+          await applySharedLink(link);
+        } catch (error) {
+          showNotice(error.message);
+        }
+      }
+
+      function queueHashConsumption(source) {
+        hashConsumption = hashConsumption.then(async () => {
+          isHashWriterEnabled = false;
+          clearTimeout(hashWriteTimer);
+          try {
+            await consumeHash(source);
+          } finally {
+            isHashWriterEnabled = true;
+          }
+          scheduleHashWrite();
+        });
+        return hashConsumption;
+      }
+
+      function countMarkdownSignals(text) {
+        return MARKDOWN_SIGNAL_PATTERNS.filter((pattern) => pattern.test(text)).length;
+      }
+
+      function isValidJavaScript(text) {
+        try {
+          // Compiles the text as a function body without ever calling it.
+          new Function(text);
+          return true;
+        } catch (error) {
+          if (error instanceof SyntaxError) return false;
+          throw error;
+        }
+      }
+
+      function isValidTypeScript(text) {
+        return ts.transpileModule(text, { reportDiagnostics: true }).diagnostics.length === 0;
+      }
+
+      function detectModeSuggestion(text, trigger) {
+        if (text.trim().length < MIN_DETECTION_CHARS) return null;
+        if (mode === "md") {
+          const isPastedCode = trigger === "paste" && countMarkdownSignals(text) === 0 && isValidJavaScript(text);
+          return isPastedCode ? "js" : null;
+        }
+        const isValidCode = mode === "ts" ? isValidTypeScript(text) : isValidJavaScript(text);
+        if (isValidCode) return null;
+        return countMarkdownSignals(text) >= MIN_MARKDOWN_SIGNALS ? "md" : null;
+      }
+
+      function offerModeSuggestion(targetMode, { sourceSnapshot, unformattedText } = {}) {
+        if (!targetMode || isPaused) {
+          hideModeSuggestion();
+          return;
+        }
+        pendingSuggestion = { mode: targetMode, sourceSnapshot, unformattedText };
+        suggestionBtn.textContent = targetMode === "md" ? "Looks like Markdown, switch?" : "Looks like JavaScript, switch?";
+        suggestionChip.classList.remove("hidden");
+      }
+
+      function hideModeSuggestion() {
+        pendingSuggestion = null;
+        suggestionChip.classList.add("hidden");
+      }
+
+      function scheduleIdleDetection() {
+        clearTimeout(idleDetectionTimer);
+        if (mode === "md" || isSuggestionDismissed) return;
+        idleDetectionTimer = setTimeout(() => {
+          const targetMode = detectModeSuggestion(editor.getValue(), "idle");
+          // Keep a pending paste suggestion: it carries the pre-paste snapshot the idle check doesn't have.
+          if (targetMode && targetMode === pendingSuggestion?.mode) return;
+          offerModeSuggestion(targetMode);
+        }, DETECTION_IDLE_MS);
+      }
+
+      async function acceptModeSuggestion({ mode: targetMode, sourceSnapshot, unformattedText }) {
+        if (!(await switchMode(targetMode, { keepText: true, sourceSnapshot }))) return;
+        // formatOnPaste re-indents pasted Markdown as code; the new mode gets the text as it was pasted.
+        if (unformattedText === undefined || unformattedText === editor.getValue()) return;
+        replaceEditorText(unformattedText, { isUndoable: true });
+        persistCode();
+        renderOutput();
+        scheduleHashWrite();
+      }
+
+      suggestionBtn.addEventListener("click", () => {
+        const suggestion = pendingSuggestion;
+        hideModeSuggestion();
+        acceptModeSuggestion(suggestion).catch((error) => showNotice(error.message));
       });
 
-      if (localStorage.getItem(TS_KEY) === "1") {
-        loadTypeScript(() => applyTsMode(true));
+      document.getElementById("mode-suggestion-dismiss-btn").addEventListener("click", () => {
+        isSuggestionDismissed = true;
+        clearTimeout(idleDetectionTimer);
+        hideModeSuggestion();
+      });
+
+      // Captured on document because Monaco stops the event before it reaches the container's capture phase.
+      // This runs before Monaco applies the paste, so it sees the text the paste replaces.
+      document.addEventListener("paste", (event) => {
+        if (!container.contains(event.target)) return;
+        pasteContext = { codeBefore: editor.getValue(), unformattedText: textAfterPlainPaste(event) };
+      }, true);
+
+      function textAfterPlainPaste(event) {
+        const selections = editor.getSelections();
+        const pastedText = event.clipboardData?.getData("text/plain");
+        if (!pastedText || selections?.length !== 1) return undefined;
+        const model = editor.getModel();
+        const code = model.getValue();
+        const start = model.getOffsetAt(selections[ 0 ].getStartPosition());
+        const end = model.getOffsetAt(selections[ 0 ].getEndPosition());
+        return code.slice(0, start) + pastedText.replace(/\r\n?/g, model.getEOL()) + code.slice(end);
       }
+
+      editor.onDidPaste((event) => {
+        isSuggestionDismissed = false;
+        const context = pasteContext;
+        pasteContext = null;
+        const pastedLength = editor.getModel().getValueLengthInRange(event.range);
+        const wasEmpty = (context?.codeBefore ?? "").trim() === "";
+        const replacedEverything = pastedLength === editor.getModel().getValueLength();
+        if (pastedLength < LARGE_PASTE_CHARS && !wasEmpty && !replacedEverything) return;
+        offerModeSuggestion(detectModeSuggestion(editor.getValue(), "paste"), {
+          sourceSnapshot: context?.codeBefore,
+          unformattedText: context?.unformattedText,
+        });
+      });
 
       const savedDefine = window.define;
       window.define = function () { return savedDefine.apply(this, arguments); };
@@ -380,7 +994,7 @@ Promise.reject(new Error("async failure")).catch((err) =>
       };
       document.head.appendChild(vimScript);
 
-      document.getElementById("format-btn").addEventListener("click", () => {
+      formatBtn.addEventListener("click", () => {
         editor.getAction("editor.action.formatDocument").run();
       });
 
@@ -408,13 +1022,23 @@ Promise.reject(new Error("async failure")).catch((err) =>
         .getElementById("copy-output-btn")
         .addEventListener("click", () => {
           navigator.clipboard
-            .writeText(outputDiv.innerText)
+            .writeText((mode === "md" ? previewDiv : outputDiv).innerText)
             .then(() =>
               flashCopied(document.getElementById("copy-output-btn")),
             );
         });
 
+      function renderOutput() {
+        const code = editor.getValue();
+        if (mode === "md") {
+          previewDiv.replaceChildren(renderMarkdown(code));
+          return;
+        }
+        runCode(code);
+      }
+
       function runCode(code) {
+        if (isPaused) return;
         outputDiv.innerHTML = "";
 
         function appendLine(text, colorClass) {
@@ -452,7 +1076,7 @@ Promise.reject(new Error("async failure")).catch((err) =>
         };
 
         try {
-          const runnable = tsActive && tsLoaded
+          const runnable = mode === "ts"
             ? ts.transpileModule(code, { compilerOptions: { target: ts.ScriptTarget.ES2020 } }).outputText
             : code;
           new Function("console", runnable)(customConsole);
@@ -461,13 +1085,33 @@ Promise.reject(new Error("async failure")).catch((err) =>
         }
       }
 
-      editor.onDidChangeModelContent(() => {
-        const code = editor.getValue();
-        localStorage.setItem(tsActive ? STORAGE_TS_KEY : STORAGE_KEY, code);
-        runCode(code);
+      editor.onDidChangeModelContent((event) => {
+        if (isApplyingProgrammaticEdit) return;
+        if (isPaused) {
+          // Undo and redo re-apply text rather than type it, so they never count as consent to run.
+          const isHistoryEdit = event.isUndoing || event.isRedoing || event.isFlush;
+          if (!isHistoryEdit) setPaused(false);
+          return;
+        }
+        persistCode();
+        renderOutput();
+        scheduleHashWrite();
+        scheduleIdleDetection();
       });
 
-      runCode(editor.getValue());
+      async function initialize() {
+        try {
+          await switchMode(readStoredMode());
+        } catch (error) {
+          showNotice(error.message);
+        }
+        await queueHashConsumption("load");
+      }
+
+      updateModeUi();
+      renderOutput();
+      addEventListener("hashchange", () => queueHashConsumption("hashchange"));
+      initialize();
     });
 
     // Divider drag to resize
