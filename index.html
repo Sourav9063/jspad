@@ -14,7 +14,6 @@
   <link rel="icon" href="https://sourav9063.github.io/favicon.ico" />
   <link rel="canonical" href="https://sourav9063.github.io/jspad" />
 
-  <!-- Open Graph / Social -->
   <meta property="og:type" content="website" />
   <meta property="og:url" content="https://sourav9063.github.io/jspad" />
   <meta property="og:title" content="JS Pad: Vim-Enabled JavaScript & TypeScript Playground and Online Editor" />
@@ -22,16 +21,14 @@
     content="The first Vim-enabled JavaScript and TypeScript playground on the web. Full Vim keybindings, VS Code engine, live JS/TS execution, all in your browser. No setup, no account required." />
   <meta property="og:site_name" content="JS Pad" />
 
-  <!-- Twitter -->
   <meta name="twitter:card" content="summary" />
   <meta name="twitter:title" content="JS Pad: Vim-Enabled JavaScript & TypeScript Playground and Online Editor" />
   <meta name="twitter:description"
     content="The first Vim-enabled JavaScript and TypeScript playground on the web. Full Vim keybindings, VS Code engine, live JS/TS execution, all in your browser. No setup, no account required." />
 
   <script>
-    // A URL with a hash opens a shared link. Until it's applied, the editor and output stay empty under a
-    // blurred cover, so the saved code never flashes up first. Set before the body is parsed.
-    //   link-pending: the editor and output are hidden.  link-cover: the cover is shown.
+    // Set before the body is parsed, so saved code never flashes up before a shared link is applied.
+    // link-pending hides the editor and output; link-cover shows the blurred cover over them.
     if (location.hash.length > 1) document.documentElement.classList.add("link-pending", "link-cover");
   </script>
   <script src="https://cdn.tailwindcss.com"></script>
@@ -47,7 +44,6 @@
     #preview.markdown-body { background-color: #000; }
   </style>
 
-  <!-- Structured Data -->
   <script type="application/ld+json">
       {
         "@context": "https://schema.org",
@@ -102,7 +98,6 @@
       <div class="flex items-center gap-2 md:gap-3 min-w-0 ml-2 overflow-x-auto [scrollbar-width:none]">
         <button id="save-btn" title="Save (Ctrl+S / Cmd+S)" aria-label="Save" disabled
           class="flex items-center h-[22px] px-1.5 text-xs font-mono rounded cursor-pointer transition-colors text-zinc-400 hover:text-white border border-zinc-700 hover:border-zinc-500 whitespace-nowrap disabled:opacity-40 disabled:cursor-default disabled:hover:text-zinc-400 disabled:hover:border-zinc-700">
-          <!-- Icon only on narrow screens, where the toolbar has no room for the word. -->
           <svg class="md:hidden" xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none"
             stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
             <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path>
@@ -157,7 +152,7 @@
   </div>
 
   <div id="divider"
-    class="relative h-3 w-full md:h-full md:w-1 bg-zinc-800 hover:bg-sky-600 cursor-row-resize md:cursor-col-resize transition-colors flex-shrink-0 flex items-center justify-center">
+    class="relative h-3 w-full md:h-full md:w-1 touch-none bg-zinc-800 hover:bg-sky-600 cursor-row-resize md:cursor-col-resize transition-colors flex-shrink-0 flex items-center justify-center">
     <div class="md:hidden flex gap-1 pointer-events-none">
       <span class="w-8 h-1 rounded-full bg-zinc-500"></span>
     </div>
@@ -471,7 +466,9 @@
       const TYPESCRIPT_URL = "https://cdn.jsdelivr.net/npm/typescript/lib/typescript.js";
       // Above this, chat apps, email clients, URL shorteners and QR codes may cut a link off.
       const SHARE_LINK_WARN_LENGTH = 2000;
-      const SHARE_FEEDBACK_MS = 1500;
+      const COPY_FEEDBACK_MS = 1500;
+      const CHECK_ICON_HTML = `<svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>`;
+      const MONACO_VIM_URL = "https://cdn.jsdelivr.net/npm/monaco-vim@0.4.4/dist/monaco-vim.umd.js";
       // Matches duration-500 on #link-loading.
       const LINK_COVER_FADE_MS = 500;
       // Important, so the green also wins over the buttons' hover:text-white while the pointer is still on them.
@@ -1115,33 +1112,20 @@ Paste emoji directly: ⛺ 😂 🚀
         const linkPromise = encodeShareHash({ mode, code: editor.getValue() })
           .then((hash) => `${location.origin}${location.pathname}${location.search}#${hash}`);
         shareBtn.textContent = "...";
-        let copyError = null;
-        try {
-          await copyText(linkPromise);
-        } catch (error) {
-          copyError = error;
-        }
-        let link;
-        try {
-          link = await linkPromise;
-        } catch (encodeError) {
-          showNotice(encodeError.message);
-          shareBtn.textContent = "Share";
+        const [ copyResult, linkResult ] = await Promise.allSettled([ copyText(linkPromise), linkPromise ]);
+        shareBtn.textContent = "Share";
+        if (linkResult.status === "rejected") {
+          showNotice(linkResult.reason.message);
           return;
         }
+        const link = linkResult.value;
         showShareLinkInAddressBar(link);
-        if (copyError) {
-          console.warn("Couldn't copy the share link:", copyError);
+        if (copyResult.status === "rejected") {
+          console.warn("Couldn't copy the share link:", copyResult.reason);
           showNotice("Couldn't copy the link to the clipboard. Copy it from the address bar instead.");
-          shareBtn.textContent = "Share";
           return;
         }
-        shareBtn.textContent = "Copied!";
-        shareBtn.classList.add(COPIED_CLASS);
-        setTimeout(() => {
-          shareBtn.textContent = "Share";
-          shareBtn.classList.remove(COPIED_CLASS);
-        }, SHARE_FEEDBACK_MS);
+        flashCopied(shareBtn, "Copied!");
         if (link.length > SHARE_LINK_WARN_LENGTH) {
           showNotice(`Link copied, but it's ${link.length.toLocaleString()} characters long. Some chat apps and email clients cut off links over ${SHARE_LINK_WARN_LENGTH.toLocaleString()} characters.`);
         }
@@ -1154,10 +1138,9 @@ Paste emoji directly: ⛺ 😂 🚀
         if (link.mode !== mode && hasUnsavedChanges() && !confirmDiscardChanges(`Open this ${link.mode.toUpperCase()} link`)) return;
         if (!(await switchMode(link.mode))) return;
         hideModeSuggestion();
+        replaceEditorText(link.code, { isUndoable: true });
         // Markdown is sanitized and never executed, so it renders without a pause.
         setPaused(link.mode !== "md");
-        replaceEditorText(link.code, { isUndoable: true });
-        renderOutput();
       }
 
       async function consumeHash(source) {
@@ -1307,51 +1290,40 @@ Paste emoji directly: ⛺ 😂 🚀
         });
       });
 
-      const savedDefine = window.define;
-      window.define = function () { return savedDefine.apply(this, arguments); };
-      const vimScript = document.createElement("script");
-      vimScript.src = "https://cdn.jsdelivr.net/npm/monaco-vim@0.4.4/dist/monaco-vim.umd.js";
-      vimScript.onload = function () {
-        window.define = savedDefine;
-        MonacoVim = window.MonacoVim;
-        MonacoVim.VimMode.Vim.defineEx("write", "w", saveCode);
-        if (localStorage.getItem(VIM_KEY) === "1") setVimActive(true);
-      };
-      document.head.appendChild(vimScript);
+      // A wrapper without define.amd makes monaco-vim's UMD bundle set window.MonacoVim instead of
+      // registering an anonymous AMD module, while Monaco's own modules can still call define meanwhile.
+      const amdDefine = window.define;
+      window.define = function () { return amdDefine.apply(this, arguments); };
+      loadClassicScript(MONACO_VIM_URL)
+        .finally(() => { window.define = amdDefine; })
+        .then(() => {
+          MonacoVim = window.MonacoVim;
+          MonacoVim.VimMode.Vim.defineEx("write", "w", saveCode);
+          if (localStorage.getItem(VIM_KEY) === "1") setVimActive(true);
+        }, (error) => console.warn("Couldn't load Vim mode:", error));
 
       formatBtn.addEventListener("click", () => {
         editor.getAction("editor.action.formatDocument").run();
       });
 
-      function flashCopied(btn) {
-        const orig = btn.innerHTML;
-        btn.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>`;
-        btn.classList.add(COPIED_CLASS);
+      function flashCopied(button, feedbackHtml = CHECK_ICON_HTML) {
+        const originalHtml = button.innerHTML;
+        button.innerHTML = feedbackHtml;
+        button.classList.add(COPIED_CLASS);
         setTimeout(() => {
-          btn.innerHTML = orig;
-          btn.classList.remove(COPIED_CLASS);
-        }, 1500);
+          button.innerHTML = originalHtml;
+          button.classList.remove(COPIED_CLASS);
+        }, COPY_FEEDBACK_MS);
       }
 
-      document
-        .getElementById("copy-editor-btn")
-        .addEventListener("click", () => {
-          navigator.clipboard
-            .writeText(editor.getValue())
-            .then(() =>
-              flashCopied(document.getElementById("copy-editor-btn")),
-            );
+      function copyOnClick(button, getText) {
+        button.addEventListener("click", () => {
+          navigator.clipboard.writeText(getText()).then(() => flashCopied(button));
         });
+      }
 
-      document
-        .getElementById("copy-output-btn")
-        .addEventListener("click", () => {
-          navigator.clipboard
-            .writeText((mode === "md" ? previewDiv : outputDiv).innerText)
-            .then(() =>
-              flashCopied(document.getElementById("copy-output-btn")),
-            );
-        });
+      copyOnClick(document.getElementById("copy-editor-btn"), () => editor.getValue());
+      copyOnClick(document.getElementById("copy-output-btn"), () => (mode === "md" ? previewDiv : outputDiv).innerText);
 
       function renderOutput() {
         const code = editor.getValue();
@@ -1433,7 +1405,7 @@ Paste emoji directly: ⛺ 😂 🚀
 
       function runCode(code) {
         if (isPaused) return;
-        outputDiv.innerHTML = "";
+        outputDiv.replaceChildren();
 
         function appendLine(text, colorClass) {
           if (outputDiv.firstChild) {
@@ -1447,26 +1419,17 @@ Paste emoji directly: ⛺ 😂 🚀
           outputDiv.appendChild(span);
         }
 
-        function stringify(a) {
-          if (a instanceof Error) return a.message;
-          if (typeof a === "object" && a !== null)
-            return JSON.stringify(a, null, 2);
-          return String(a);
+        function formatArg(value) {
+          if (value instanceof Error) return value.message;
+          if (typeof value === "object" && value !== null) return JSON.stringify(value, null, 2);
+          return String(value);
         }
 
+        const logTo = (prefix, colorClass) => (...args) => appendLine(prefix + args.map(formatArg).join(" "), colorClass);
         const customConsole = {
-          log: (...args) =>
-            appendLine(args.map(stringify).join(" "), "text-sky-300"),
-          error: (...args) =>
-            appendLine(
-              "[error] " + args.map(stringify).join(" "),
-              "text-red-400",
-            ),
-          warn: (...args) =>
-            appendLine(
-              "[warn] " + args.map(stringify).join(" "),
-              "text-yellow-400",
-            ),
+          log: logTo("", "text-sky-300"),
+          error: logTo("[error] ", "text-red-400"),
+          warn: logTo("[warn] ", "text-yellow-400"),
         };
 
         try {
@@ -1504,7 +1467,6 @@ Paste emoji directly: ⛺ 😂 🚀
         revealLinkedPage();
       }
 
-      // Shows the editor and output, then fades the cover's blur out over them.
       function revealLinkedPage() {
         const root = document.documentElement;
         if (!root.classList.contains("link-cover")) return;
@@ -1521,65 +1483,45 @@ Paste emoji directly: ⛺ 😂 🚀
       initialize();
     });
 
-    // Divider drag to resize
+    // Matches Tailwind's md breakpoint, where the panels switch from stacked to side by side.
+    const SIDE_BY_SIDE_MIN_WIDTH_PX = 768;
+    const MIN_PANEL_HEIGHT_PX = 100;
+    const MIN_PANEL_WIDTH_PX = 150;
     const divider = document.getElementById("divider");
     const editorPanel = document.getElementById("editor-panel");
 
-    function isMobile() { return window.innerWidth < 768; }
+    function isStacked() { return window.innerWidth < SIDE_BY_SIDE_MIN_WIDTH_PX; }
 
-    function setInitialSize() {
-      if (isMobile()) {
-        editorPanel.style.width = "";
-        editorPanel.style.height = "50%";
-      } else {
-        editorPanel.style.height = "";
-        editorPanel.style.width = "60%";
-      }
+    function resetPanelSize() {
+      editorPanel.style.width = isStacked() ? "" : "60%";
+      editorPanel.style.height = isStacked() ? "50%" : "";
     }
 
-    setInitialSize();
-    window.addEventListener("resize", setInitialSize);
+    resetPanelSize();
+    window.addEventListener("resize", resetPanelSize);
 
-    function startDrag(getClientPos) {
-      const mobile = isMobile();
-      document.body.style.cursor = mobile ? "row-resize" : "col-resize";
+    function clamp(value, min, max) { return Math.min(Math.max(value, min), max); }
+
+    divider.addEventListener("pointerdown", (event) => {
+      event.preventDefault();
+      divider.setPointerCapture(event.pointerId);
+      document.body.style.cursor = isStacked() ? "row-resize" : "col-resize";
       document.body.style.userSelect = "none";
-
-      function onMove(e) {
-        const pos = getClientPos(e);
-        if (mobile) {
-          const newHeight = Math.min(Math.max(pos.y, 100), document.body.clientHeight - 100);
-          editorPanel.style.height = newHeight + "px";
-        } else {
-          const newWidth = Math.min(Math.max(pos.x, 150), document.body.clientWidth - 150);
-          editorPanel.style.width = newWidth + "px";
-        }
-      }
-
-      function onUp() {
-        document.body.style.cursor = "";
-        document.body.style.userSelect = "";
-        document.removeEventListener("mousemove", onMove);
-        document.removeEventListener("mouseup", onUp);
-        document.removeEventListener("touchmove", onMove);
-        document.removeEventListener("touchend", onUp);
-      }
-
-      document.addEventListener("mousemove", onMove);
-      document.addEventListener("mouseup", onUp);
-      document.addEventListener("touchmove", onMove, { passive: false });
-      document.addEventListener("touchend", onUp);
-    }
-
-    divider.addEventListener("mousedown", (e) => {
-      e.preventDefault();
-      startDrag((e) => ({ x: e.clientX, y: e.clientY }));
     });
 
-    divider.addEventListener("touchstart", (e) => {
-      e.preventDefault();
-      startDrag((e) => ({ x: e.touches[ 0 ].clientX, y: e.touches[ 0 ].clientY }));
-    }, { passive: false });
+    divider.addEventListener("pointermove", (event) => {
+      if (!divider.hasPointerCapture(event.pointerId)) return;
+      if (isStacked()) {
+        editorPanel.style.height = `${clamp(event.clientY, MIN_PANEL_HEIGHT_PX, document.body.clientHeight - MIN_PANEL_HEIGHT_PX)}px`;
+        return;
+      }
+      editorPanel.style.width = `${clamp(event.clientX, MIN_PANEL_WIDTH_PX, document.body.clientWidth - MIN_PANEL_WIDTH_PX)}px`;
+    });
+
+    divider.addEventListener("lostpointercapture", () => {
+      document.body.style.cursor = "";
+      document.body.style.userSelect = "";
+    });
   </script>
 </body>
 
