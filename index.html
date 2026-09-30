@@ -30,6 +30,8 @@
     // Set before the body is parsed, so saved code never flashes up before a shared link is applied.
     // link-pending hides the editor and output; link-cover shows the blurred cover over them.
     if (location.hash.length > 1) document.documentElement.classList.add("link-pending", "link-cover");
+    // Markdown mode splits the panels evenly; set early so the layout doesn't jump once the editor loads.
+    if (localStorage.getItem("jspad_mode") === "md") document.documentElement.classList.add("md-mode");
   </script>
   <script src="https://cdn.tailwindcss.com"></script>
   <style>
@@ -82,7 +84,7 @@
 </head>
 
 <body class="flex flex-col md:flex-row h-screen bg-black overflow-hidden">
-  <div id="editor-panel" class="flex flex-col">
+  <div id="editor-panel" class="flex flex-col h-1/2 md:h-auto md:w-3/5 md:[.md-mode_&]:w-1/2">
     <div class="flex items-center justify-between px-3 h-[30px] bg-black border-b border-zinc-800">
       <div class="flex items-center gap-3 min-w-0">
         <span class="shrink-0 text-white font-mono font-semibold tracking-tight text-sm">JS<span
@@ -1027,6 +1029,8 @@ Paste emoji directly: ⛺ 😂 🚀
         outputDiv.classList.toggle("hidden", mode === "md");
         previewDiv.classList.toggle("hidden", mode !== "md");
         formatBtn.disabled = mode === "md";
+        document.documentElement.classList.toggle("md-mode", mode === "md");
+        resetPanelSize();
       }
 
       // Resolves true once the editor is in nextMode, or false if a newer switch superseded this one.
@@ -1492,12 +1496,12 @@ Paste emoji directly: ⛺ 😂 🚀
 
     function isStacked() { return window.innerWidth < SIDE_BY_SIDE_MIN_WIDTH_PX; }
 
+    // Drops a dragged size, falling back to the markup's default split for the layout and mode.
     function resetPanelSize() {
-      editorPanel.style.width = isStacked() ? "" : "60%";
-      editorPanel.style.height = isStacked() ? "50%" : "";
+      editorPanel.style.width = "";
+      editorPanel.style.height = "";
     }
 
-    resetPanelSize();
     window.addEventListener("resize", resetPanelSize);
 
     function clamp(value, min, max) { return Math.min(Math.max(value, min), max); }
