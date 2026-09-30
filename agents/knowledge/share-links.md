@@ -4,14 +4,18 @@ Owner: `index.html` (the codec script and the link handling in the main script).
 
 ## Format
 
-- The URL hash is a version prefix, a dot, then base64url (no padding) of Brotli q11 over a JSON
-  payload holding the mode (`js` / `ts` / `md`) and the code. Version `1` is the only version so far.
-- The version exists so a later format change can keep old links working: add a new version, keep
-  decoding the old one. Decode rejects unknown versions with a distinct error code.
+- The URL hash is a version prefix, a dot, then base64url (no padding) of Brotli q11 over the payload.
+  Current version: `2`.
+- Payload (v2): a one-character mode tag (`j` = js, `t` = ts, `m` = md) followed by the raw UTF-8
+  code. No JSON: its keys and escaping roughly doubled the link length for short snippets.
+- Links are made only in the current version, but every older version stays decodable: add a parser
+  to `SHARE_PAYLOAD_PARSERS`, never remove one. Version `1` is a JSON payload `{"mode","code"}`.
+  A version newer than the page fails with a distinct `unsupported-version` code that asks the user
+  to reload; an unknown older one (e.g. `0`) fails as damaged.
 - Brotli comes from `brotli-wasm` (WASM), not `CompressionStream`, because Chrome has no native
   Brotli compression. Measured gain over deflate: about 9–11% on code, about 20% on prose.
 - Decoding is treated as untrusted input: length cap on the hash, streamed decompression with an
-  output cap (defends against decompression bombs), fatal UTF-8, strict JSON shape, trailing input
+  output cap (defends against decompression bombs), fatal UTF-8, known mode tag (strict JSON shape for v1), trailing input
   rejected. Every failure becomes a `ShareLinkError` with a stable code and a user-facing message.
 
 ## Third-party code integrity
