@@ -26,7 +26,8 @@ async (page, t) => {
   await t.waitForLanguage("markdown");
   await t.until(() => document.querySelector("#preview h1")?.textContent === "JS Pad");
   t.expect("accepting keeps the pasted text unformatted", await t.editorValue(), markdown);
-  t.expect("accepting restores the saved JS", await page.evaluate(() => localStorage.getItem("jspad_code")), SAVED_JS);
+  t.expect("accepting leaves the saved JS alone", await t.savedCode(), SAVED_JS);
+  await t.pressSave();
 
   const jsSnippet = "const items = [1, 2, 3];\nconst doubled = items.map((n) => n * 2);\nconsole.log(doubled);";
   await t.paste(jsSnippet);
@@ -35,7 +36,7 @@ async (page, t) => {
   await page.click("#mode-suggestion-btn");
   await t.waitForLanguage("javascript");
   t.expect("accepting keeps the JS", await t.editorValue(), jsSnippet);
-  t.expect("accepting restores the saved Markdown", await page.evaluate(() => localStorage.getItem("jspad_md_code")), markdown);
+  t.expect("accepting leaves the saved Markdown alone", await page.evaluate(() => localStorage.getItem("jspad_md_code")), markdown);
   await t.until(() => document.getElementById("output").innerText.includes("2"));
 
   await page.evaluate(() => { const editor = monaco.editor.getEditors()[ 0 ]; editor.setValue(""); editor.focus(); });

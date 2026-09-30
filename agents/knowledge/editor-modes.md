@@ -9,6 +9,23 @@ Owner: `index.html` (main script).
   their mode (one is always pressed). They replaced TS and MD toggles that returned to JS when
   clicked again, which was confusing (user decision). Picking the current mode cancels a slower
   pending switch and never unpauses shared code.
+
+## Saving
+
+- Manual save everywhere (user decision; replaced autosave). Code is written to localStorage only by the
+  Save button, Ctrl/Cmd+S (window capture listener, so the browser's Save Page never opens) or Vim's
+  `:w`. Typing, Run, switching mode, accepting a suggestion and opening a link never save.
+- "Unsaved changes" is derived, not tracked: the editor text differs from the mode's saved code. So Save
+  re-disables when an edit is undone by hand, and another tab's save is picked up. The mode itself
+  (and Vim, panel size) still save immediately; they're preferences.
+- Save is disabled while shared code is paused: saved code runs on every load, so saving would skip Run.
+- Unsaved changes ask before they're lost: `confirm` on switching mode (button, accepted suggestion
+  whose pre-paste text was unsaved, or a hashchange link in another mode) and `beforeunload` on
+  leaving. iOS Safari ignores `beforeunload`, so on iPhone closing the tab drops unsaved changes.
+- A damaged link at load leaves the editor and output empty (saved code an undo away). That empty
+  state doesn't count as unsaved until the user edits.
+- On narrow screens Save is icon-only and the toolbar buttons scroll sideways rather than overlap the
+  logo.
 - The legacy TS flag key is still read once to migrate users who had TS mode on.
 - Mode dependencies (TypeScript compiler, Markdown renderer) load on first use through shared
   in-flight promises; a failure shows a notice and resets so the next click retries.
@@ -48,8 +65,8 @@ Owner: `index.html` (main script).
   called); TS by transpiler syntax diagnostics, because TS isn't valid JS. Otherwise at least two
   distinct line-start Markdown signals are needed; `#!` and `#private` never count.
 - Reverse: pasting valid JS with no Markdown signals in MD mode suggests JS.
-- Accepting after a paste keeps the text in the new mode and restores the old mode's saved code to
-  its pre-paste value. It also undoes Monaco's `formatOnPaste` re-indentation, which mangles
+- Accepting after a paste keeps the text in the new mode (unsaved) and leaves the old mode's saved code
+  as it was. It also undoes Monaco's `formatOnPaste` re-indentation, which mangles
   Markdown pasted into JS mode.
 - The pre-paste snapshot is captured in a document-level capture listener: Monaco stops the paste
   event before it reaches the editor container's capture phase.

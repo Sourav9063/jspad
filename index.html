@@ -28,6 +28,12 @@
   <meta name="twitter:description"
     content="The first Vim-enabled JavaScript and TypeScript playground on the web. Full Vim keybindings, VS Code engine, live JS/TS execution, all in your browser. No setup, no account required." />
 
+  <script>
+    // A URL with a hash opens a shared link. Until it's applied, the editor and output stay empty under a
+    // blurred cover, so the saved code never flashes up first. Set before the body is parsed.
+    //   link-pending: the editor and output are hidden.  link-cover: the cover is shown.
+    if (location.hash.length > 1) document.documentElement.classList.add("link-pending", "link-cover");
+  </script>
   <script src="https://cdn.tailwindcss.com"></script>
   <style>
     /* github-markdown-css assumes browser defaults that Tailwind's reset removes. */
@@ -83,7 +89,7 @@
   <div id="editor-panel" class="flex flex-col">
     <div class="flex items-center justify-between px-3 h-[30px] bg-black border-b border-zinc-800">
       <div class="flex items-center gap-3 min-w-0">
-        <span class="text-white font-mono font-semibold tracking-tight text-sm">JS<span
+        <span class="shrink-0 text-white font-mono font-semibold tracking-tight text-sm">JS<span
             class="text-sky-400">Pad</span></span>
         <div id="mode-suggestion" class="hidden flex items-center gap-1 text-xs font-mono">
           <button id="mode-suggestion-btn"
@@ -92,7 +98,19 @@
             class="px-1 text-zinc-500 hover:text-white cursor-pointer">&#x2715;</button>
         </div>
       </div>
-      <div class="flex items-center gap-3">
+      <!-- On narrow screens the buttons scroll sideways instead of running over the logo. -->
+      <div class="flex items-center gap-2 md:gap-3 min-w-0 ml-2 overflow-x-auto [scrollbar-width:none]">
+        <button id="save-btn" title="Save (Ctrl+S / Cmd+S)" aria-label="Save" disabled
+          class="flex items-center h-[22px] px-1.5 text-xs font-mono rounded cursor-pointer transition-colors text-zinc-400 hover:text-white border border-zinc-700 hover:border-zinc-500 whitespace-nowrap disabled:opacity-40 disabled:cursor-default disabled:hover:text-zinc-400 disabled:hover:border-zinc-700">
+          <!-- Icon only on narrow screens, where the toolbar has no room for the word. -->
+          <svg class="md:hidden" xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none"
+            stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path>
+            <polyline points="17 21 17 13 7 13 7 21"></polyline>
+            <polyline points="7 3 7 8 15 8"></polyline>
+          </svg>
+          <span class="hidden md:inline">Save</span>
+        </button>
         <button id="share-btn" title="Copy a link to this code"
           class="px-1.5 py-0.5 text-xs font-mono rounded cursor-pointer transition-colors text-zinc-400 hover:text-white border border-zinc-700 hover:border-zinc-500 whitespace-nowrap">
           Share
@@ -101,7 +119,7 @@
           class="px-2.5 py-0.5 text-xs font-mono bg-sky-700 hover:bg-sky-600 text-white rounded cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-sky-700">
           Format
         </button>
-        <span class="hidden md:inline text-xs text-zinc-500 font-mono">Shift+Alt+F</span>
+        <span class="hidden xl:inline text-xs text-zinc-500 font-mono whitespace-nowrap">Shift+Alt+F</span>
         <div role="group" aria-label="Language" class="flex items-center gap-1">
           <button id="js-mode-btn" title="JavaScript mode"
             class="px-1.5 py-0.5 text-xs font-mono rounded cursor-pointer transition-colors text-zinc-500 hover:text-white border border-zinc-700 hover:border-zinc-500">
@@ -131,7 +149,7 @@
       </div>
     </div>
     <div class="relative flex-1">
-      <div id="container" class="absolute inset-0"></div>
+      <div id="container" class="absolute inset-0 [.link-pending_&]:invisible"></div>
       <div id="vim-statusbar"
         class="hidden absolute bottom-0 left-0 right-0 h-[22px] px-3 bg-black border-t border-zinc-800 font-mono text-xs text-zinc-400 flex items-center pointer-events-none">
       </div>
@@ -177,10 +195,10 @@
       <span id="notice-text" class="flex-1"></span>
       <button id="notice-dismiss-btn" title="Dismiss" class="px-1 text-red-300 hover:text-white cursor-pointer">&#x2715;</button>
     </div>
-    <div id="output" class="flex-1 font-mono text-sm p-3 px-5 overflow-auto whitespace-pre-wrap text-sky-300">
+    <div id="output" class="[.link-pending_&]:invisible flex-1 font-mono text-sm p-3 px-5 overflow-auto whitespace-pre-wrap text-sky-300">
       Output will appear here...
     </div>
-    <div id="preview" class="hidden flex-1 overflow-auto p-5 markdown-body"></div>
+    <div id="preview" class="[.link-pending_&]:invisible hidden flex-1 overflow-auto p-5 markdown-body"></div>
     <template id="code-copy-template">
       <button data-copy-code title="Copy code"
         class="absolute top-2 right-2 p-1.5 rounded-md border border-zinc-700 bg-zinc-900 text-zinc-400 hover:text-white cursor-pointer opacity-0 group-hover:opacity-100 focus:opacity-100 [@media(hover:none)]:opacity-100 transition-opacity">
@@ -191,6 +209,17 @@
         </svg>
       </button>
     </template>
+  </div>
+
+  <div id="link-loading"
+    class="hidden [.link-cover_&]:flex fixed inset-0 z-50 items-center justify-center bg-black/30 backdrop-blur-sm transition-all duration-500 ease-out motion-reduce:transition-none">
+    <span class="flex items-center gap-2 font-mono text-sm text-zinc-300 animate-pulse">
+      <svg class="animate-spin" xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none"
+        stroke="currentColor" stroke-width="2" stroke-linecap="round">
+        <path d="M21 12a9 9 0 1 1-6.22-8.56"></path>
+      </svg>
+      Opening shared link...
+    </span>
   </div>
 
 
@@ -402,6 +431,16 @@
       }
       return parsePayload(text);
     }
+
+    // sessionStorage: the hash this tab has already applied or shared, so a reload doesn't re-apply it over newer edits.
+    const SETTLED_LINK_KEY = "jspad_settled_link";
+
+    // A link the page opens with starts decoding now, while the editor is still loading.
+    const initialLink = location.hash.length > 1 && location.hash !== sessionStorage.getItem(SETTLED_LINK_KEY)
+      ? { hash: location.hash, decoding: decodeShareHash(location.hash.slice(1)) }
+      : null;
+    // Awaited once the editor is ready; this only stops an early failure being reported as unhandled.
+    initialLink?.decoding.catch(() => {});
   </script>
   <script>
     require.config({
@@ -426,8 +465,6 @@
 
       const STORAGE_KEYS = { js: "jspad_code", ts: "jspad_ts_code", md: "jspad_md_code" };
       const MODE_KEY = "jspad_mode";
-      // sessionStorage: the hash this tab has already applied or shared, so a reload doesn't re-apply it over newer edits.
-      const SETTLED_LINK_KEY = "jspad_settled_link";
       // Written before Markdown mode existed: "1" meant TypeScript mode.
       const LEGACY_TS_KEY = "jspad_ts";
       const MONACO_LANGUAGES = { js: "javascript", ts: "typescript", md: "markdown" };
@@ -435,6 +472,10 @@
       // Above this, chat apps, email clients, URL shorteners and QR codes may cut a link off.
       const SHARE_LINK_WARN_LENGTH = 2000;
       const SHARE_FEEDBACK_MS = 1500;
+      // Matches duration-500 on #link-loading.
+      const LINK_COVER_FADE_MS = 500;
+      // Important, so the green also wins over the buttons' hover:text-white while the pointer is still on them.
+      const COPIED_CLASS = "!text-green-400";
       const MAX_HIGHLIGHT_CACHE_ENTRIES = 200;
       const PAUSED_OUTPUT_TEXT = "Shared code is paused. Click Run or edit the code to run it.";
       const DETECTION_IDLE_MS = 3000;
@@ -756,7 +797,7 @@ Paste emoji directly: ⛺ 😂 🚀
       const DEFAULT_CODE = { js: defaultCode, ts: defaultTsCode, md: defaultMdCode };
 
       function savedCodeFor(targetMode) {
-        return localStorage.getItem(STORAGE_KEYS[ targetMode ]) || DEFAULT_CODE[ targetMode ];
+        return localStorage.getItem(STORAGE_KEYS[ targetMode ]) ?? DEFAULT_CODE[ targetMode ];
       }
 
       function readStoredMode() {
@@ -800,6 +841,7 @@ Paste emoji directly: ⛺ 😂 🚀
       const shareBtn = document.getElementById("share-btn");
       const codeCopyTemplate = document.getElementById("code-copy-template");
       const sharedBanner = document.getElementById("shared-banner");
+      const saveBtn = document.getElementById("save-btn");
       const noticeBar = document.getElementById("notice");
       const noticeText = document.getElementById("notice-text");
       const suggestionChip = document.getElementById("mode-suggestion");
@@ -808,6 +850,9 @@ Paste emoji directly: ⛺ 😂 🚀
       let mode = "js";
       // True while code from someone else's link is in the editor and hasn't been allowed to run.
       let isPaused = false;
+      // True while the page opened with a damaged link: the editor and output are left empty, which doesn't
+      // count as an unsaved change until the user edits. The saved code is an undo away.
+      let isHidingSavedCode = false;
       let isApplyingProgrammaticEdit = false;
       let hashConsumption = Promise.resolve();
       let latestModeSwitchId = 0;
@@ -931,10 +976,38 @@ Paste emoji directly: ⛺ 😂 🚀
         }
       }
 
-      function persistCode() {
-        if (isPaused) return;
-        localStorage.setItem(STORAGE_KEYS[ mode ], editor.getValue());
+      // Code is saved only by Save, Ctrl/Cmd+S or Vim's :w, never as a side effect of typing, running,
+      // switching mode or opening a link.
+      function hasUnsavedChanges() {
+        return !isHidingSavedCode && editor.getValue() !== savedCodeFor(mode);
       }
+
+      // Unrun shared code can't be saved: saved code runs on every load, so saving would skip Run.
+      function updateSaveUi() {
+        saveBtn.disabled = isPaused || !hasUnsavedChanges();
+      }
+
+      function saveCode() {
+        if (saveBtn.disabled) return;
+        localStorage.setItem(STORAGE_KEYS[ mode ], editor.getValue());
+        updateSaveUi();
+        rememberSettledLink();
+      }
+
+      function confirmDiscardChanges(action) {
+        return confirm(`Your ${mode.toUpperCase()} changes aren't saved. ${action} and discard them?`);
+      }
+
+      saveBtn.addEventListener("click", saveCode);
+      // Capture phase, so the browser's own Save Page never opens, even while the editor has focus.
+      addEventListener("keydown", (event) => {
+        if (!(event.ctrlKey || event.metaKey) || event.key.toLowerCase() !== "s") return;
+        event.preventDefault();
+        saveCode();
+      }, { capture: true });
+      addEventListener("beforeunload", (event) => {
+        if (hasUnsavedChanges()) event.preventDefault();
+      });
 
       // Edits made here don't count as the user typing: they never resume paused code or trigger detection.
       function replaceEditorText(text, { isUndoable }) {
@@ -960,20 +1033,19 @@ Paste emoji directly: ⛺ 😂 🚀
       }
 
       // Resolves true once the editor is in nextMode, or false if a newer switch superseded this one.
-      async function switchMode(nextMode, { keepText = false, sourceSnapshot } = {}) {
+      async function switchMode(nextMode, { keepText = false } = {}) {
         // Counted even when already in nextMode, so picking the current mode cancels a slower pending switch.
         const switchId = ++latestModeSwitchId;
         if (nextMode === mode) return true;
         await loadModeDependencies(nextMode);
         if (switchId !== latestModeSwitchId) return false;
 
-        if (sourceSnapshot === undefined) persistCode();
-        else localStorage.setItem(STORAGE_KEYS[ mode ], sourceSnapshot);
         mode = nextMode;
+        isHidingSavedCode = false;
         localStorage.setItem(MODE_KEY, mode);
         monaco.editor.setModelLanguage(editor.getModel(), MONACO_LANGUAGES[ mode ]);
         if (!keepText) replaceEditorText(savedCodeFor(mode), { isUndoable: false });
-        persistCode();
+        updateSaveUi();
         hideModeSuggestion();
         updateModeUi();
         renderOutput();
@@ -981,6 +1053,7 @@ Paste emoji directly: ⛺ 😂 🚀
       }
 
       async function selectMode(nextMode) {
+        if (nextMode !== mode && hasUnsavedChanges() && !confirmDiscardChanges(`Switch to ${nextMode.toUpperCase()}`)) return;
         const previousMode = mode;
         let didSwitch;
         try {
@@ -1000,19 +1073,18 @@ Paste emoji directly: ⛺ 😂 🚀
       function setPaused(paused) {
         isPaused = paused;
         sharedBanner.classList.toggle("hidden", !paused);
+        updateSaveUi();
         if (paused) {
           outputDiv.textContent = PAUSED_OUTPUT_TEXT;
           return;
         }
-        persistCode();
         renderOutput();
-        rememberSettledLink();
       }
 
       document.getElementById("run-shared-btn").addEventListener("click", () => setPaused(false));
 
-      // Once the link's code is saved locally (not paused), the address bar keeps the link but a reload
-      // shows the saved code, including any edits made since.
+      // Once a link is saved (or was already the user's own), the address bar keeps it but a reload shows the
+      // saved code, including any edits made since. A link that isn't saved yet re-opens on reload.
       function rememberSettledLink() {
         if (isPaused || !location.hash) return;
         sessionStorage.setItem(SETTLED_LINK_KEY, location.hash);
@@ -1065,10 +1137,10 @@ Paste emoji directly: ⛺ 😂 🚀
           return;
         }
         shareBtn.textContent = "Copied!";
-        shareBtn.classList.add("text-green-400");
+        shareBtn.classList.add(COPIED_CLASS);
         setTimeout(() => {
           shareBtn.textContent = "Share";
-          shareBtn.classList.remove("text-green-400");
+          shareBtn.classList.remove(COPIED_CLASS);
         }, SHARE_FEEDBACK_MS);
         if (link.length > SHARE_LINK_WARN_LENGTH) {
           showNotice(`Link copied, but it's ${link.length.toLocaleString()} characters long. Some chat apps and email clients cut off links over ${SHARE_LINK_WARN_LENGTH.toLocaleString()} characters.`);
@@ -1078,12 +1150,13 @@ Paste emoji directly: ⛺ 😂 🚀
       shareBtn.addEventListener("click", shareCode);
 
       async function applySharedLink(link) {
+        // A link in the same mode replaces the text as an undoable edit, so only a mode change can lose work.
+        if (link.mode !== mode && hasUnsavedChanges() && !confirmDiscardChanges(`Open this ${link.mode.toUpperCase()} link`)) return;
         if (!(await switchMode(link.mode))) return;
         hideModeSuggestion();
         // Markdown is sanitized and never executed, so it renders without a pause.
-        if (link.mode !== "md") setPaused(true);
+        setPaused(link.mode !== "md");
         replaceEditorText(link.code, { isUndoable: true });
-        persistCode();
         renderOutput();
       }
 
@@ -1092,7 +1165,9 @@ Paste emoji directly: ⛺ 😂 🚀
         if (!hash) return;
         if (source === "load" && location.hash === sessionStorage.getItem(SETTLED_LINK_KEY)) return;
         try {
-          const link = await decodeShareHash(hash);
+          const link = await (source === "load" && location.hash === initialLink?.hash
+            ? initialLink.decoding
+            : decodeShareHash(hash));
           // On load the page's own link matches saved code; in an open tab it matches the editor.
           const ownCode = source === "load" ? savedCodeFor(link.mode) : (link.mode === mode ? editor.getValue() : null);
           if (link.code === ownCode) {
@@ -1102,13 +1177,21 @@ Paste emoji directly: ⛺ 😂 🚀
           await applySharedLink(link);
         } catch (error) {
           showNotice(error.message);
+          if (source === "load") hideSavedCode();
         }
+      }
+
+      function hideSavedCode() {
+        isHidingSavedCode = true;
+        replaceEditorText("", { isUndoable: true });
+        outputDiv.textContent = "";
+        previewDiv.replaceChildren();
       }
 
       function queueHashConsumption(source) {
         hashConsumption = hashConsumption.then(async () => {
           await consumeHash(source);
-          rememberSettledLink();
+          if (!hasUnsavedChanges()) rememberSettledLink();
         });
         return hashConsumption;
       }
@@ -1170,11 +1253,13 @@ Paste emoji directly: ⛺ 😂 🚀
       }
 
       async function acceptModeSuggestion({ mode: targetMode, sourceSnapshot, unformattedText }) {
-        if (!(await switchMode(targetMode, { keepText: true, sourceSnapshot }))) return;
+        // The text moves to the new mode; unsaved edits made before a paste would be lost with the old mode.
+        const hasUnsavedSource = sourceSnapshot !== undefined && sourceSnapshot !== savedCodeFor(mode);
+        if (hasUnsavedSource && !confirmDiscardChanges(`Switch to ${targetMode.toUpperCase()}`)) return;
+        if (!(await switchMode(targetMode, { keepText: true }))) return;
         // formatOnPaste re-indents pasted Markdown as code; the new mode gets the text as it was pasted.
         if (unformattedText === undefined || unformattedText === editor.getValue()) return;
         replaceEditorText(unformattedText, { isUndoable: true });
-        persistCode();
         renderOutput();
       }
 
@@ -1229,6 +1314,7 @@ Paste emoji directly: ⛺ 😂 🚀
       vimScript.onload = function () {
         window.define = savedDefine;
         MonacoVim = window.MonacoVim;
+        MonacoVim.VimMode.Vim.defineEx("write", "w", saveCode);
         if (localStorage.getItem(VIM_KEY) === "1") setVimActive(true);
       };
       document.head.appendChild(vimScript);
@@ -1240,10 +1326,10 @@ Paste emoji directly: ⛺ 😂 🚀
       function flashCopied(btn) {
         const orig = btn.innerHTML;
         btn.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>`;
-        btn.classList.add("text-green-400");
+        btn.classList.add(COPIED_CLASS);
         setTimeout(() => {
           btn.innerHTML = orig;
-          btn.classList.remove("text-green-400");
+          btn.classList.remove(COPIED_CLASS);
         }, 1500);
       }
 
@@ -1394,6 +1480,7 @@ Paste emoji directly: ⛺ 😂 🚀
       }
 
       editor.onDidChangeModelContent((event) => {
+        updateSaveUi();
         if (isApplyingProgrammaticEdit) return;
         if (isPaused) {
           // Undo and redo re-apply text rather than type it, so they never count as consent to run.
@@ -1401,7 +1488,8 @@ Paste emoji directly: ⛺ 😂 🚀
           if (!isHistoryEdit) setPaused(false);
           return;
         }
-        persistCode();
+        isHidingSavedCode = false;
+        updateSaveUi();
         renderOutput();
         scheduleIdleDetection();
       });
@@ -1413,6 +1501,18 @@ Paste emoji directly: ⛺ 😂 🚀
           showNotice(error.message);
         }
         await queueHashConsumption("load");
+        revealLinkedPage();
+      }
+
+      // Shows the editor and output, then fades the cover's blur out over them.
+      function revealLinkedPage() {
+        const root = document.documentElement;
+        if (!root.classList.contains("link-cover")) return;
+        root.classList.remove("link-pending");
+        const cover = document.getElementById("link-loading");
+        cover.classList.replace("backdrop-blur-sm", "backdrop-blur-none");
+        cover.classList.add("opacity-0");
+        setTimeout(() => root.classList.remove("link-cover"), LINK_COVER_FADE_MS);
       }
 
       updateModeUi();

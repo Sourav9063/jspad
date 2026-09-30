@@ -4,6 +4,9 @@
 
   const t = {
     baseUrl,
+    // Every dialog (confirm, beforeunload) is recorded and answered with dialogAnswer, so none can block the session.
+    dialogs: [],
+    dialogAnswer: true,
 
     expect(label, actual, expected) {
       const actualJson = JSON.stringify(actual);
@@ -81,6 +84,16 @@
       await t.until(() => window.__clipboardTexts.length > 0);
       return page.evaluate(() => window.__clipboardTexts[ 0 ]);
     },
+
+    pressSave: () => page.keyboard.press("Control+s"),
+    saveEnabled: () => page.evaluate(() => !document.getElementById("save-btn").disabled),
+    savedCode: (key = "jspad_code") => page.evaluate((key) => localStorage.getItem(key), key),
   };
+  // Listeners outlive a test file in a reused session, so replace them instead of adding more.
+  page.removeAllListeners("dialog");
+  page.on("dialog", (dialog) => {
+    t.dialogs.push(dialog.type());
+    (t.dialogAnswer ? dialog.accept() : dialog.dismiss()).catch(() => {});
+  });
   return t;
 }

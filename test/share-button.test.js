@@ -18,14 +18,18 @@ async (page, t) => {
   t.expect("the link holds the editor code", await page.evaluate((hash) => decodeShareHash(hash), link.slice(link.indexOf("#") + 1)),
     { mode: "js", code: "console.log('mine'); // a" });
   await t.until(() => document.getElementById("share-btn").textContent.trim() === "Copied!");
+  await page.hover("#share-btn");
+  // Waits out the color transition; times out (and fails) if hover:text-white wins.
+  await t.until(() => getComputedStyle(document.getElementById("share-btn")).color === "rgb(74, 222, 128)");
   t.expect("no notice for a short link", await t.notice(), null);
 
   await t.typeAtEnd(" // b");
   t.expect("editing after Share keeps the old link", await page.evaluate(() => location.href), link);
+  await t.pressSave();
   await page.reload();
   await t.editorReady();
   await page.waitForTimeout(PLAIN_VISIT_SETTLE_MS);
-  t.expect("reloading the tab keeps later edits over its own link", await t.editorValue(), "console.log('mine'); // a // b");
+  t.expect("reloading the tab keeps later saved edits over its own link", await t.editorValue(), "console.log('mine'); // a // b");
   t.expect("reloading the tab shows no banner", await t.bannerShown(), false);
 
   await page.evaluate(() => { navigator.clipboard.write = async () => { throw new Error("denied"); }; });

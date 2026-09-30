@@ -17,14 +17,14 @@ JS Pad is the first Vim-enabled JavaScript and TypeScript playground on the web.
 - **Copy buttons** copy editor code or output to clipboard with one click
 - **Markdown mode** pick MD to write Markdown on the left and see a sanitized, GitHub-style preview on the right, with syntax-highlighted code blocks and a copy button on each; JS Pad suggests switching when pasted text looks like Markdown (or like JavaScript while in MD mode)
 - **Share links** the Share button copies a link holding your code and mode, Brotli-compressed into the URL hash, and puts it in the address bar; nothing is uploaded. Editing never changes the URL; click Share again to update it
-- **Auto-save** code and mode preferences persisted to localStorage across sessions
+- **Save** click Save, press Ctrl/Cmd+S or use Vim's `:w` to keep your code in localStorage; Save lights up whenever there are unsaved changes, and JS Pad asks before switching mode or leaving would lose them. Mode preferences save automatically
 - **Pitch-black dark theme** easy on the eyes
 - **Zero dependencies** no install, no build step, no account required
 
 ## Sharing and privacy
 
 - The link is built in your browser and never sent to a server, but it contains your code. Anyone you send it to, and their browser history, gets the code, so don't share code containing secrets such as API keys.
-- Code from someone else's link opens **paused**: nothing runs until you click **Run** or edit it, and it isn't saved over your own code until then. Ctrl+Z brings back what you had before. The link stays in the address bar; once the code runs, reloading that tab keeps your later edits instead of re-opening the link.
+- Code from someone else's link opens **paused**: nothing runs until you click **Run** or edit it. Opening a link never touches your saved code; it's only replaced if you click **Save**. Ctrl+Z brings back what you had before. The link stays in the address bar; reloading re-opens it until you save, and after that the tab keeps your saved code instead.
 - Markdown links render right away, because Markdown is never executed. Images in a shared Markdown document load from wherever the author points them, which lets that server see your IP address.
 - Very long code makes long links. If a copied link is over about 2,000 characters, JS Pad warns you, because some chat apps and email clients cut such links off.
 

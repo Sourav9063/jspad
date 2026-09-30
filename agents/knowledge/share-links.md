@@ -27,11 +27,18 @@ Owner: `index.html` (the codec script and the link handling in the main script).
   Monaco's AMD `define` instead of setting globals.
 - Brotli loads only when needed: on the first Share click, or right away when the page opens with a
   hash. Plain visits never download it.
+- Any URL with a hash loads behind a blurred "Opening shared link..." cover. An inline `<head>` script
+  adds `link-pending` (editor, output and preview `invisible`) and `link-cover` (cover shown) to `<html>`
+  before the body is parsed; the elements react through Tailwind arbitrary variants
+  (`[.link-pending_&]:invisible`). When the load-time link handling finishes (applied, own, settled, or
+  failed), `link-pending` goes, the cover fades its blur and opacity out, then `link-cover` goes. An
+  unsettled link starts decoding in the first script, in parallel with Monaco loading.
 
 ## Execution gate
 
-- Code from a foreign link never runs and is never persisted until the user clicks Run or makes a
-  real edit. Undo, redo and edits the page makes itself never count as consent.
+- Code from a foreign link never runs until the user clicks Run or makes a real edit. Undo, redo and
+  edits the page makes itself never count as consent. Opening a link never saves: its code, run or
+  not, reaches localStorage only through Save (see editor-modes.md, Saving).
 - "Own" link: on load, the link's code equals the saved code for its mode; on `hashchange`, it equals
   the editor. Anything else is foreign. Reloading after another tab edited the same mode shows the
   banner on your own code; that is an accepted false positive (fails safe).
@@ -43,10 +50,10 @@ Owner: `index.html` (the codec script and the link handling in the main script).
 - Share copies via a promise-backed `ClipboardItem`, so the click's user activation still counts
   while the WASM loads and compresses; `writeText` is the fallback.
 - The hash stays in the address bar after a link is opened (user decision). Once it is settled (own
-  link, Markdown, resumed, damaged, or just shared), it is recorded per tab in sessionStorage, and a
-  reload with that same hash is ignored, so the stale link doesn't overwrite newer edits or repeat
-  the damaged-link notice. While paused it isn't recorded, so a reload re-opens it still paused. A
-  new tab or a different hash is applied normally.
+  link, damaged, saved, or just shared), it is recorded per tab in sessionStorage, and a reload with
+  that same hash is ignored, so the stale link doesn't overwrite newer edits or repeat the
+  damaged-link notice. A link that isn't saved yet (paused, run, or Markdown) isn't recorded, so a
+  reload re-opens it (paused again). A new tab or a different hash is applied normally.
 - Switching mode while paused discards the foreign code (the editor gets that mode's saved code), so
   it unpauses without running anything.
 - Markdown links are never paused: Markdown is sanitized and never executed.

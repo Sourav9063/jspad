@@ -1,4 +1,5 @@
-// Opening share links: someone else's code is paused, the hash stays in the URL, reloads don't clobber edits.
+// Opening share links: someone else's code is paused and never saved until Save, the hash stays in the URL,
+// reloads don't clobber saved edits.
 async (page, t) => {
   const SETTLE_MS = 1500;
   const MY_CODE = "console.log('mine');";
@@ -41,17 +42,30 @@ async (page, t) => {
   const afterRedo = await state();
   t.expect("undo and redo never run foreign code", [ afterRedo.runs, afterRedo.editorHasForeign, afterRedo.savedHasForeign ], [ 0, true, false ]);
 
+  t.expect("unrun shared code can't be saved", await t.saveEnabled(), false);
   await page.click("#run-shared-btn");
   await t.until(() => window.__foreignRuns === 1);
-  t.expect("Run runs and saves it", await state(), { runs: 1, banner: false, editorHasForeign: true, savedHasForeign: true });
+  t.expect("Run runs it without saving", await state(), { runs: 1, banner: false, editorHasForeign: true, savedHasForeign: false });
   t.expect("Run keeps the hash", await page.evaluate(() => location.href), foreignUrl);
+  t.expect("run shared code can be saved", await t.saveEnabled(), true);
 
   await t.typeAtEnd(" // edited");
   await page.reload();
   await t.editorReady();
+  await t.waitForBanner();
+  t.expect("reload before saving re-opens the link paused", await state(), { runs: 0, banner: true, editorHasForeign: true, savedHasForeign: false });
+  t.expect("reload before saving drops the unsaved edits", (await t.editorValue()).endsWith(" // edited"), false);
+
+  await page.click("#run-shared-btn");
+  await t.typeAtEnd(" // edited");
+  await page.click("#save-btn");
+  t.expect("Save keeps the shared code", (await t.savedCode()).endsWith(" // edited"), true);
+  t.expect("Save is disabled after saving", await t.saveEnabled(), false);
+  await page.reload();
+  await t.editorReady();
   await page.waitForTimeout(SETTLE_MS);
-  t.expect("reload after edits keeps the edits", (await t.editorValue()).endsWith(" // edited"), true);
-  t.expect("reload after edits shows no banner", await t.bannerShown(), false);
+  t.expect("reload after saving keeps the edits", (await t.editorValue()).endsWith(" // edited"), true);
+  t.expect("reload after saving shows no banner", await t.bannerShown(), false);
 
   const ownHash = await t.encode("js", await t.editorValue());
   await page.evaluate(() => sessionStorage.clear());
@@ -88,11 +102,12 @@ async (page, t) => {
   await page.click("#run-shared-btn");
   await t.until(() => document.getElementById("output").innerText.includes("js-link"));
 
-  const beforeDamaged = await t.editorValue();
+  const beforeDamaged = await t.savedCode();
   await t.open(`${t.baseUrl}#1.garbage`);
   await t.waitForNotice();
   t.expect("a damaged link says so", await t.notice(), "This link is damaged or incomplete, so it couldn't be opened.");
-  t.expect("a damaged link keeps my code", await t.editorValue(), beforeDamaged);
+  t.expect("a damaged link leaves the editor empty", await t.editorValue(), "");
+  t.expect("a damaged link keeps my saved code", await page.evaluate(() => localStorage.getItem("jspad_code")), beforeDamaged);
   t.expect("a damaged link keeps its hash", await t.hash(), "#1.garbage");
   await page.reload();
   await t.editorReady();
